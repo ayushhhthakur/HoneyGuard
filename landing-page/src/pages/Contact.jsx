@@ -28,7 +28,7 @@ function Contact() {
           transition={{ delay: 0.2 }}
           className="text-xl text-gray-400 max-w-2xl mx-auto"
         >
-          We're here to help with your blockchain security needs
+          We're here to help with your security needs
         </motion.p>
       </section>
 
