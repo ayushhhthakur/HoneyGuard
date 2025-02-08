@@ -41,8 +41,8 @@ const Tokens = () => {
   const categories = [
     { value: 'image', label: 'Image Token', icon: cilCloudUpload, description: 'Secure tokens for image-based assets' },
     { value: 'aws', label: 'AWS Token', icon: cilSync, description: 'Tokens for AWS service authentication' },
-    { value: 'financial', label: 'Financial Token', icon: cilMoney, description: 'Secure financial transaction tokens' },
-    { value: 'healthcare', label: 'Healthcare Token', icon: cilMedicalCross, description: 'HIPAA-compliant healthcare tokens' }
+    // { value: 'financial', label: 'Financial Token', icon: cilMoney, description: 'Secure financial transaction tokens' },
+    // { value: 'healthcare', label: 'Healthcare Token', icon: cilMedicalCross, description: 'HIPAA-compliant healthcare tokens' }
   ]
 
   const categoryFields = {
@@ -75,9 +75,9 @@ const Tokens = () => {
         required: true,
         options: [
           { value: 's3', label: 'S3' },
-          { value: 'ec2', label: 'EC2' },
-          { value: 'lambda', label: 'Lambda' },
-          { value: 'dynamodb', label: 'DynamoDB' }
+          // { value: 'ec2', label: 'EC2' },
+          // { value: 'lambda', label: 'Lambda' },
+          // { value: 'dynamodb', label: 'DynamoDB' }
         ]
       }
     ],

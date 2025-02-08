@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import API_URL from '../../config/api.js'
 import axios from 'axios'
@@ -6,321 +6,183 @@ import axios from 'axios'
 import {
   CRow,
   CCol,
-  CDropdown,
-  CDropdownMenu,
-  CDropdownItem,
-  CDropdownToggle,
   CWidgetStatsA,
 } from '@coreui/react'
 import { getStyle } from '@coreui/utils'
 import { CChartBar, CChartLine } from '@coreui/react-chartjs'
-import CIcon from '@coreui/icons-react'
-import { cilArrowBottom, cilArrowTop, cilOptions } from '@coreui/icons'
+
+const REFRESH_INTERVAL = 30000; // 30 seconds
 
 const WidgetsDropdown = (props) => {
-  const widgetChartRef1 = useRef(null)
-  const widgetChartRef2 = useRef(null)
   const [tokenCount, setTokenCount] = useState(null)
   const [logsCount, setLogsCount] = useState(null)
+  const [tokenStats, setTokenStats] = useState({ labels: [], values: [] })
+  const [activityStats, setActivityStats] = useState({ labels: [], suspicious: [], normal: [], values: [] })
 
-
-  // get token count
-  useEffect(() => {
-    const getTokenCount = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/tokens/count`)
-        if (response.data.success) {
-          setTokenCount(response.data.data)
-        }
-        else {
-          console.log("Error fetching token count")
-        }
-      } catch (error) {
-        console.log("Error fetching token count") 
+  // Fetch all data
+  const fetchAllData = useCallback(async () => {
+    try {
+      // Fetch token count
+      const tokenCountResponse = await axios.get(`${API_URL}/tokens/count`)
+      if (tokenCountResponse.data.success) {
+        setTokenCount(tokenCountResponse.data.data)
       }
+
+      // Fetch logs count
+      const logsCountResponse = await axios.get(`${API_URL}/logs/count`)
+      if (logsCountResponse.data.success) {
+        setLogsCount(logsCountResponse.data.data)
+      }
+
+      // Fetch token stats
+      const tokenStatsResponse = await axios.get(`${API_URL}/api/stats/tokens`)
+      if (tokenStatsResponse.data.success) {
+        setTokenStats(tokenStatsResponse.data.data)
+      }
+
+      // Fetch activity stats
+      const activityStatsResponse = await axios.get(`${API_URL}/api/stats/activity`)
+      if (activityStatsResponse.data.success) {
+        setActivityStats(activityStatsResponse.data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error)
     }
-    getTokenCount()
-  },[])
+  }, [])
 
-
-  // get logs count
+  // Initial data fetch
   useEffect(() => {
-    const getLogsCount = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/logs/count`)
-        if (response.data.success) {
-          setLogsCount(response.data.data)
-        }
-        else {
-          console.log("Error fetching logs count")
-        }
-      } catch (error) {
-        console.log("Error fetching logs count") 
-      }
-    }
-    getLogsCount()
-  },[])
+    fetchAllData()
+  }, [fetchAllData])
 
+  // Set up polling for real-time updates
   useEffect(() => {
-    document.documentElement.addEventListener('ColorSchemeChange', () => {
-      if (widgetChartRef1.current) {
-        setTimeout(() => {
-          widgetChartRef1.current.data.datasets[0].pointBackgroundColor = getStyle('--cui-primary')
-          widgetChartRef1.current.update()
-        })
-      }
+    const intervalId = setInterval(fetchAllData, REFRESH_INTERVAL)
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId)
+  }, [fetchAllData])
 
-      if (widgetChartRef2.current) {
-        setTimeout(() => {
-          widgetChartRef2.current.data.datasets[0].pointBackgroundColor = getStyle('--cui-info')
-          widgetChartRef2.current.update()
-        })
-      }
+  // Helper function to get the latest 7 days of data
+  const getLatestData = (data, count = 7) => {
+    if (!data || !Array.isArray(data)) return new Array(count).fill(0)
+    return data.slice(-count)
+  }
+
+  // Format date for tooltips
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric'
     })
-  }, [widgetChartRef1, widgetChartRef2])
+  }
+
+  const baseChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuart'
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleFont: {
+          size: 12,
+        },
+        bodyFont: {
+          size: 11,
+        },
+        padding: 8,
+        cornerRadius: 4,
+        displayColors: false,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+          drawTicks: false,
+        },
+        ticks: {
+          display: true,
+          font: {
+            size: 9,
+          },
+          callback: function(value) {
+            const label = this.getLabelForValue(value)
+            return formatDate(label)
+          },
+        },
+      },
+      y: {
+        min: 0,
+        grid: {
+          color: 'rgba(255,255,255,0.1)',
+          drawBorder: false,
+        },
+        ticks: {
+          display: true,
+          font: {
+            size: 9,
+          },
+          maxTicksLimit: 5,
+        },
+      },
+    },
+  }
 
   return (
     <CRow className={props.className} xs={{ gutter: 4 }}>
-      <CCol sm={6} xl={4} xxl={3}>
-        <CWidgetStatsA
-          color="primary"
-          value={
-            <>
-              {tokenCount}
-              <span className="fs-6 fw-normal">
-                {/* (-12.4% <CIcon icon={cilArrowBottom} />) */}
-              </span>
-            </>
-          }
-          title="Active Honey Tokens"
-          action={
-            <CDropdown alignment="end">
-              <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
-                <CIcon icon={cilOptions} />
-              </CDropdownToggle>
-              <CDropdownMenu>
-                <CDropdownItem>View Tokens</CDropdownItem>
-                <CDropdownItem disabled>Export CSV</CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
-          }
-          chart={
-            <CChartLine
-              ref={widgetChartRef1}
-              className="mt-3 mx-3"
-              style={{ height: '70px' }}
-              data={{
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-                datasets: [
-                  {
-                    label: 'My First dataset',
-                    backgroundColor: 'transparent',
-                    borderColor: 'rgba(255,255,255,.55)',
-                    pointBackgroundColor: getStyle('--cui-primary'),
-                    data: [65, 59, 84, 84, 51, 55, 40],
-                  },
-                ],
-              }}
-              options={{
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-                maintainAspectRatio: false,
-                scales: {
-                  x: {
-                    border: {
-                      display: false,
-                    },
-                    grid: {
-                      display: false,
-                      drawBorder: false,
-                    },
-                    ticks: {
-                      display: false,
-                    },
-                  },
-                  y: {
-                    min: 30,
-                    max: 89,
-                    display: false,
-                    grid: {
-                      display: false,
-                    },
-                    ticks: {
-                      display: false,
-                    },
-                  },
-                },
-                elements: {
-                  line: {
-                    borderWidth: 1,
-                    tension: 0.4,
-                  },
-                  point: {
-                    radius: 4,
-                    hitRadius: 10,
-                    hoverRadius: 4,
-                  },
-                },
-              }}
-            />
-          }
-        />
-      </CCol>
-      <CCol sm={6} xl={4} xxl={3}>
+      <CCol sm={6}>
         <CWidgetStatsA
           color="info"
-          value={
-            <>
-              {logsCount}
-              <span className="fs-6 fw-normal">
-                {/* (40.9% <CIcon icon={cilArrowTop} />) */}
-              </span>
-            </>
-          }
-          title="Access Attempts"
-          action={
-            <CDropdown alignment="end">
-              <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
-                <CIcon icon={cilOptions} />
-              </CDropdownToggle>
-              <CDropdownMenu>
-                <CDropdownItem>View Logs</CDropdownItem>
-                <CDropdownItem disabled>Export CSV</CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
-          }
+          value={tokenCount || '0'}
+          title="Total Tokens"
           chart={
             <CChartLine
-              ref={widgetChartRef2}
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                labels: getLatestData(tokenStats.labels),
                 datasets: [
                   {
-                    label: 'My First dataset',
-                    backgroundColor: 'transparent',
-                    borderColor: 'rgba(255,255,255,.55)',
-                    pointBackgroundColor: getStyle('--cui-info'),
-                    data: [1, 18, 9, 17, 34, 22, 11],
-                  },
-                ],
-              }}
-              options={{
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-                maintainAspectRatio: false,
-                scales: {
-                  x: {
-                    border: {
-                      display: false,
-                    },
-                    grid: {
-                      display: false,
-                      drawBorder: false,
-                    },
-                    ticks: {
-                      display: false,
-                    },
-                  },
-                  y: {
-                    min: -9,
-                    max: 39,
-                    display: false,
-                    grid: {
-                      display: false,
-                    },
-                    ticks: {
-                      display: false,
-                    },
-                  },
-                },
-                elements: {
-                  line: {
-                    borderWidth: 1,
-                  },
-                  point: {
-                    radius: 4,
-                    hitRadius: 10,
-                    hoverRadius: 4,
-                  },
-                },
-              }}
-            />
-          }
-        />
-      </CCol>
-      {/* <CCol sm={6} xl={4} xxl={3}>
-        <CWidgetStatsA
-          color="warning"
-          value={
-            <>
-              2.49%{' '}
-              <span className="fs-6 fw-normal">
-                (84.7% <CIcon icon={cilArrowTop} />)
-              </span>
-            </>
-          }
-          title="Conversion Rate"
-          action={
-            <CDropdown alignment="end">
-              <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
-                <CIcon icon={cilOptions} />
-              </CDropdownToggle>
-              <CDropdownMenu>
-                <CDropdownItem>Action</CDropdownItem>
-                <CDropdownItem>Another action</CDropdownItem>
-                <CDropdownItem>Something else here...</CDropdownItem>
-                <CDropdownItem disabled>Disabled action</CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
-          }
-          chart={
-            <CChartLine
-              className="mt-3"
-              style={{ height: '70px' }}
-              data={{
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-                datasets: [
-                  {
-                    label: 'My First dataset',
-                    backgroundColor: 'rgba(255,255,255,.2)',
-                    borderColor: 'rgba(255,255,255,.55)',
-                    data: [78, 81, 80, 45, 34, 12, 40],
+                    label: 'Tokens',
+                    backgroundColor: 'rgba(255,255,255,.1)',
+                    borderColor: 'rgba(255,255,255,.85)',
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: 'rgba(255,255,255,.85)',
+                    data: getLatestData(tokenStats.values),
                     fill: true,
+                    tension: 0.4,
                   },
                 ],
               }}
               options={{
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-                maintainAspectRatio: false,
-                scales: {
-                  x: {
-                    display: false,
-                  },
-                  y: {
-                    display: false,
-                  },
-                },
+                ...baseChartOptions,
                 elements: {
                   line: {
                     borderWidth: 2,
-                    tension: 0.4,
                   },
                   point: {
-                    radius: 0,
+                    radius: 3,
                     hitRadius: 10,
-                    hoverRadius: 4,
+                    hoverRadius: 5,
+                    borderWidth: 2,
+                  },
+                },
+                plugins: {
+                  ...baseChartOptions.plugins,
+                  tooltip: {
+                    ...baseChartOptions.plugins.tooltip,
+                    callbacks: {
+                      title: (context) => formatDate(context[0].label),
+                      label: (context) => `Tokens: ${context.raw}`,
+                    },
                   },
                 },
               }}
@@ -328,92 +190,51 @@ const WidgetsDropdown = (props) => {
           }
         />
       </CCol>
-      <CCol sm={6} xl={4} xxl={3}>
+
+      <CCol sm={6}>
         <CWidgetStatsA
-          color="danger"
-          value={
-            <>
-              44K{' '}
-              <span className="fs-6 fw-normal">
-                (-23.6% <CIcon icon={cilArrowBottom} />)
-              </span>
-            </>
-          }
-          title="Sessions"
-          action={
-            <CDropdown alignment="end">
-              <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
-                <CIcon icon={cilOptions} />
-              </CDropdownToggle>
-              <CDropdownMenu>
-                <CDropdownItem>Action</CDropdownItem>
-                <CDropdownItem>Another action</CDropdownItem>
-                <CDropdownItem>Something else here...</CDropdownItem>
-                <CDropdownItem disabled>Disabled action</CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
-          }
+          color="warning"
+          value={logsCount || '0'}
+          title="Total Activities"
           chart={
-            <CChartBar
+            <CChartLine
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: [
-                  'January',
-                  'February',
-                  'March',
-                  'April',
-                  'May',
-                  'June',
-                  'July',
-                  'August',
-                  'September',
-                  'October',
-                  'November',
-                  'December',
-                  'January',
-                  'February',
-                  'March',
-                  'April',
-                ],
+                labels: getLatestData(activityStats.labels),
                 datasets: [
                   {
-                    label: 'My First dataset',
-                    backgroundColor: 'rgba(255,255,255,.2)',
-                    borderColor: 'rgba(255,255,255,.55)',
-                    data: [78, 81, 80, 45, 34, 12, 40, 85, 65, 23, 12, 98, 34, 84, 67, 82],
-                    barPercentage: 0.6,
+                    label: 'Activities',
+                    backgroundColor: 'rgba(255,255,255,.1)',
+                    borderColor: 'rgba(255,255,255,.85)',
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: 'rgba(255,255,255,.85)',
+                    data: getLatestData(activityStats.values),
+                    fill: true,
+                    tension: 0.4,
                   },
                 ],
               }}
               options={{
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false,
+                ...baseChartOptions,
+                elements: {
+                  line: {
+                    borderWidth: 2,
+                  },
+                  point: {
+                    radius: 3,
+                    hitRadius: 10,
+                    hoverRadius: 5,
+                    borderWidth: 2,
                   },
                 },
-                scales: {
-                  x: {
-                    grid: {
-                      display: false,
-                      drawTicks: false,
-                    },
-                    ticks: {
-                      display: false,
-                    },
-                  },
-                  y: {
-                    border: {
-                      display: false,
-                    },
-                    grid: {
-                      display: false,
-                      drawBorder: false,
-                      drawTicks: false,
-                    },
-                    ticks: {
-                      display: false,
+                plugins: {
+                  ...baseChartOptions.plugins,
+                  tooltip: {
+                    ...baseChartOptions.plugins.tooltip,
+                    callbacks: {
+                      title: (context) => formatDate(context[0].label),
+                      label: (context) => `Activities: ${context.raw}`,
                     },
                   },
                 },
@@ -421,7 +242,7 @@ const WidgetsDropdown = (props) => {
             />
           }
         />
-      </CCol> */}
+      </CCol>
     </CRow>
   )
 }
