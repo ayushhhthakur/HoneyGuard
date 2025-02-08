@@ -23,7 +23,6 @@ const routes = [
   { path: '/utils/logs', name: 'Logs', element: Log },
   { path: '/utils/maps', name: 'Maps', element: Maps },
   { path: '/utils/category', name: 'Category', element: Category },
-  { path: '/', name: 'Honeytokens', element: HoneytokenDashboard },
   { path: '/widgets', name: 'Widgets', element: Widgets },
 ]
 
