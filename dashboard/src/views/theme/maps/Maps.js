@@ -14,6 +14,7 @@ const Maps = () => {
   const [ipLocations, setIpLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-coreui-theme'));
 
   // Fetch IP locations
   useEffect(() => {
@@ -64,6 +65,30 @@ const Maps = () => {
 
     fetchIpLocations();
   }, []);
+
+  // Theme observer setup
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-coreui-theme') {
+          const newTheme = document.documentElement.getAttribute('data-coreui-theme');
+          setCurrentTheme(newTheme);
+          // Refresh markers to update popup styles
+          if (ipLocations.length > 0) {
+            clearMarkers();
+            addMarkers();
+          }
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-coreui-theme']
+    });
+
+    return () => observer.disconnect();
+  }, [ipLocations]);
 
   // Initialize map
   useEffect(() => {
@@ -168,30 +193,68 @@ const Maps = () => {
         fontWeight: 'bold'
       });
 
-      // Add count for multiple IPs
       if (locations.length > 1) {
         el.textContent = locations.length;
       }
 
       try {
-        // Create popup HTML with all IPs from this location
+        // Create popup HTML with theme-aware styles
+        const isDarkMode = currentTheme === 'dark';
         const popupHTML = `
-          <div style="padding: 10px; max-width: 300px;">
-            <h4 style="margin: 0 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+          <div style="
+            padding: 10px;
+            max-width: 300px;
+            background-color: ${isDarkMode ? '#27293d' : '#ffffff'};
+            color: ${isDarkMode ? '#ffffff' : '#333333'};
+            border-radius: 8px;
+          ">
+            <h4 style="
+              margin: 0 0 10px 0;
+              border-bottom: 1px solid ${isDarkMode ? '#2f2f45' : '#ddd'};
+              padding-bottom: 5px;
+              color: ${isDarkMode ? '#ffffff' : '#333333'};
+            ">
               ${locations.length > 1 ? `${locations.length} IPs at this Location` : 'IP Location'}
             </h4>
-            <div style="max-height: 200px; overflow-y: auto;">
+            <div style="
+              max-height: 200px;
+              overflow-y: auto;
+            ">
               ${locations.map((loc, index) => `
-                <div style="margin-bottom: ${index === locations.length - 1 ? '0' : '10px'}; padding-bottom: ${index === locations.length - 1 ? '0' : '10px'}; ${index !== locations.length - 1 ? 'border-bottom: 1px solid #eee;' : ''}">
-                  <p style="margin: 0; font-weight: bold;">IP: ${loc.ip_address}</p>
-                  <p style="margin: 3px 0 0 0; font-size: 0.9em;">
+                <div style="
+                  margin-bottom: ${index === locations.length - 1 ? '0' : '10px'};
+                  padding-bottom: ${index === locations.length - 1 ? '0' : '10px'};
+                  ${index !== locations.length - 1 ? `border-bottom: 1px solid ${isDarkMode ? '#2f2f45' : '#eee'};` : ''}
+                ">
+                  <p style="margin: 0; font-weight: bold; color: ${isDarkMode ? '#ffffff' : '#333333'};">
+                    IP: ${loc.ip_address}
+                  </p>
+                  <p style="
+                    margin: 3px 0 0 0;
+                    font-size: 0.9em;
+                    color: ${isDarkMode ? '#ffffff' : '#333333'};
+                  ">
                     ${loc.city || 'Unknown City'}, ${loc.country || 'Unknown Country'}
                   </p>
-                  ${loc.isp ? `<p style="margin: 3px 0 0 0; font-size: 0.8em; color: #666;">ISP: ${loc.isp}</p>` : ''}
+                  ${loc.isp ? `
+                    <p style="
+                      margin: 3px 0 0 0;
+                      font-size: 0.8em;
+                      color: ${isDarkMode ? '#a0aec0' : '#666666'};
+                    ">
+                      ISP: ${loc.isp}
+                    </p>
+                  ` : ''}
                 </div>
               `).join('')}
             </div>
-            <p style="margin: 10px 0 0 0; padding-top: 5px; border-top: 1px solid #ddd; font-size: 0.8em; color: #666;">
+            <p style="
+              margin: 10px 0 0 0;
+              padding-top: 5px;
+              border-top: 1px solid ${isDarkMode ? '#2f2f45' : '#ddd'};
+              font-size: 0.8em;
+              color: ${isDarkMode ? '#a0aec0' : '#666666'};
+            ">
               Coordinates: [${longitude.toFixed(4)}, ${latitude.toFixed(4)}]
             </p>
           </div>
@@ -204,9 +267,10 @@ const Maps = () => {
         })
           .setLngLat([longitude, latitude])
           .setPopup(
-            new mapboxgl.Popup({ 
+            new mapboxgl.Popup({
               offset: 25,
-              maxWidth: '300px'
+              maxWidth: '300px',
+              className: `theme-${currentTheme}` // Add theme class for additional styling if needed
             })
             .setHTML(popupHTML)
           )

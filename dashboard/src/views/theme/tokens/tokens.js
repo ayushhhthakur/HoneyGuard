@@ -36,13 +36,14 @@ const Tokens = () => {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
   const [dynamicFields, setDynamicFields] = useState({})
+  const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-coreui-theme'));
   const fileInputRef = useRef(null)
 
   const categories = [
     { value: 'image', label: 'Image Token', icon: cilCloudUpload, description: 'Secure tokens for image-based assets' },
     { value: 'aws', label: 'AWS Token', icon: cilSync, description: 'Tokens for AWS service authentication' },
-    // { value: 'financial', label: 'Financial Token', icon: cilMoney, description: 'Secure financial transaction tokens' },
-    // { value: 'healthcare', label: 'Healthcare Token', icon: cilMedicalCross, description: 'HIPAA-compliant healthcare tokens' }
+    { value: 'financial', label: 'Financial Token', icon: cilMoney, description: 'Secure financial transaction tokens' },
+    { value: 'healthcare', label: 'Healthcare Token', icon: cilMedicalCross, description: 'HIPAA-compliant healthcare tokens' }
   ]
 
   const categoryFields = {
@@ -215,24 +216,78 @@ const Tokens = () => {
     </CCard>
   )
 
-  const renderPreview = () => (
-    <CCard>
-      <CCardHeader>Token Preview</CCardHeader>
-      <CCardBody>
-        <div className="preview-section">
-          <h5>Basic Information</h5>
-          <p><strong>Name:</strong> {tokenName}</p>
-          <p><strong>Category:</strong> {categories.find(c => c.value === selectedCategory)?.label}</p>
-          <p><strong>Description:</strong> {description}</p>
+  const getThemeStyles = () => {
+    const isDarkMode = currentTheme === 'dark';
+    return {
+      previewSection: {
+        backgroundColor: isDarkMode ? '#27293d' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#333333',
+        padding: '20px',
+        borderRadius: '8px',
+        border: `1px solid ${isDarkMode ? '#2f2f45' : '#ebedef'}`
+      },
+      heading: {
+        color: isDarkMode ? '#ffffff' : '#333333',
+        borderBottom: `1px solid ${isDarkMode ? '#2f2f45' : '#ebedef'}`,
+        paddingBottom: '10px',
+        marginBottom: '15px'
+      },
+      label: {
+        color: isDarkMode ? '#a0aec0' : '#666666',
+        fontWeight: 'bold',
+        marginRight: '8px'
+      },
+      value: {
+        color: isDarkMode ? '#ffffff' : '#333333'
+      },
+      configSection: {
+        marginTop: '20px',
+        paddingTop: '15px',
+        borderTop: `1px solid ${isDarkMode ? '#2f2f45' : '#ebedef'}`
+      }
+    };
+  };
 
-          <h5 className="mt-4">Configuration</h5>
-          {Object.entries(dynamicFields).map(([key, value]) => (
-            <p key={key}><strong>{key}:</strong> {value instanceof File ? value.name : value}</p>
-          ))}
-        </div>
-      </CCardBody>
-    </CCard>
-  )
+  const renderPreview = () => {
+    const styles = getThemeStyles();
+    
+    return (
+      <CCard>
+        <CCardHeader style={styles.heading}>Token Preview</CCardHeader>
+        <CCardBody>
+          <div style={styles.previewSection}>
+            <h5 style={styles.heading}>Basic Information</h5>
+            <p>
+              <span style={styles.label}>Name:</span>
+              <span style={styles.value}>{tokenName}</span>
+            </p>
+            <p>
+              <span style={styles.label}>Category:</span>
+              <span style={styles.value}>
+                {categories.find(c => c.value === selectedCategory)?.label}
+              </span>
+            </p>
+            <p>
+              <span style={styles.label}>Description:</span>
+              <span style={styles.value}>{description}</span>
+            </p>
+
+            <div style={styles.configSection}>
+              <h5 style={styles.heading}>Configuration</h5>
+              {Object.entries(dynamicFields).map(([key, value]) => (
+                <p key={key}>
+                  <span style={styles.label}>{key}:</span>
+                  <span style={styles.value}>
+                    {value instanceof File ? value.name : value}
+                  </span>
+                </p>
+              ))}
+            </div>
+          </div>
+        </CCardBody>
+      </CCard>
+    );
+  };
 
   const renderField = (field) => {
     switch (field.type) {
@@ -480,6 +535,25 @@ const Tokens = () => {
       setLoading(false)
     }
   }
+
+  // Theme observer setup
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-coreui-theme') {
+          const newTheme = document.documentElement.getAttribute('data-coreui-theme');
+          setCurrentTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-coreui-theme']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <CContainer className="tokens-container">
