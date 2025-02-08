@@ -86,10 +86,9 @@ const Tokens = () => {
         label: 'Financial Type',
         required: true,
         options: [
-          { value: 'credit_card', label: 'Credit Card' },
-          { value: 'bank_account', label: 'Bank Account' },
-          { value: 'api_key', label: 'Payment Gateway API Key' },
-          { value: 'crypto', label: 'Cryptocurrency' }
+          { value: 'standard', label: 'Standard Access' },
+          { value: 'premium', label: 'Premium Access' },
+          { value: 'admin', label: 'Admin Access' }
         ]
       },
       {
@@ -98,9 +97,10 @@ const Tokens = () => {
         label: 'Transaction Type',
         required: true,
         options: [
-          { value: 'payment', label: 'Payment Processing' },
-          { value: 'refund', label: 'Refund Processing' },
-          { value: 'subscription', label: 'Subscription Management' }
+          { value: 'all', label: 'All Transactions' },
+          { value: 'view', label: 'View Only' },
+          { value: 'create', label: 'Create Only' },
+          { value: 'manage', label: 'Full Management' }
         ]
       }
     ],
@@ -402,29 +402,130 @@ const Tokens = () => {
       } else if (selectedCategory === 'aws') {
         // ... existing AWS token generation
       } else if (selectedCategory === 'financial') {
-        // ... existing financial token generation
+        const formData = new FormData();
+        formData.append('tokenName', tokenName);
+        formData.append('description', description);
+        formData.append('category', 'financial');
+        formData.append('financialType', dynamicFields.financialType || 'standard');
+        formData.append('transactionType', dynamicFields.transactionType || 'all');
+
+        response = await axios.post(`${API_URL}/generate-token`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        if (response.data.success) {
+          // Store token and credentials in session storage
+          sessionStorage.setItem('financial_credentials', JSON.stringify({
+            token: response.data.token,
+            credentials: response.data.credentials
+          }));
+
+          // Show success message with credentials
+          toast.success(
+            <div>
+              <strong>Financial Token Generated Successfully!</strong>
+              <p>Keep these credentials safe:</p>
+              <div className="credential-box">
+                <p><strong>Username:</strong> {response.data.credentials.username}</p>
+                <p><strong>Password:</strong> {response.data.credentials.password}</p>
+                <p><strong>Token:</strong> {response.data.token}</p>
+                <p><strong>API Base URL:</strong> {`${API_URL}/finance`}</p>
+              </div>
+              <hr/>
+              <div className="warning-box">
+                <p>⚠️ IMPORTANT:</p>
+                <ul>
+                  <li>Save these credentials immediately</li>
+                  <li>They will not be shown again</li>
+                  <li>Keep them secure and confidential</li>
+                </ul>
+              </div>
+            </div>,
+            {
+              autoClose: false,
+              closeOnClick: false,
+              draggable: false,
+              className: 'financial-toast'
+            }
+          );
+
+          // Add custom styles for the toast
+          const style = document.createElement('style');
+          style.textContent = `
+            .financial-toast {
+              background: #fff;
+              color: #333;
+              max-width: 500px !important;
+              width: 100%;
+            }
+            .credential-box {
+              background: #f8f9fa;
+              padding: 15px;
+              border-radius: 5px;
+              margin: 10px 0;
+              border-left: 4px solid #321fdb;
+            }
+            .credential-box p {
+              margin: 5px 0;
+              font-family: monospace;
+              word-break: break-all;
+            }
+            .warning-box {
+              background: #fff3cd;
+              color: #856404;
+              padding: 10px;
+              border-radius: 5px;
+              margin-top: 10px;
+            }
+            .warning-box ul {
+              margin: 5px 0;
+              padding-left: 20px;
+            }
+          `;
+          document.head.appendChild(style);
+        }
       } else {
         // ... existing image token generation
       }
 
       if (response.data.success) {
         setToken(response.data.token)
-        if (response.data.credentials) {
+        
+        // Check if credentials exist and have required fields before showing toast
+        const credentials = response.data.credentials || {};
+        const hasCredentials = credentials && 
+          (credentials.username || credentials.password || credentials.endpoint);
+
+        if (hasCredentials) {
           // Show credentials in a success toast
           toast.success(
             <div>
               <strong>Token Generated Successfully!</strong>
               <p>Credentials:</p>
-              <p>Username: {response.data.credentials.username}</p>
-              <p>Password: {response.data.credentials.password}</p>
-              <p>API Endpoint: {response.data.credentials.endpoint}</p>
+              {credentials.username && <p>Username: {credentials.username}</p>}
+              {credentials.password && <p>Password: {credentials.password}</p>}
+              {credentials.endpoint && <p>API Endpoint: {credentials.endpoint}</p>}
+              <p>Token: {response.data.token}</p>
+              <hr/>
+              <p className="text-warning">⚠️ Save these credentials now. They won't be shown again!</p>
             </div>,
             {
               autoClose: false,
               closeOnClick: false
             }
-          )
+          );
+        } else {
+          // Show simple success message if no credentials
+          toast.success(
+            <div>
+              <strong>Token Generated Successfully!</strong>
+              <p>Your token: {response.data.token}</p>
+            </div>
+          );
         }
+        
         navigate('/tokens/logs')
       } else {
         throw new Error(response.data.message || 'Failed to generate token')
@@ -507,6 +608,39 @@ const Tokens = () => {
 
           <form onSubmit={handleSubmit}>
             {renderStepContent()}
+
+            {selectedCategory === 'financial' && (
+              <div className="dynamic-fields">
+                <div className="mb-3">
+                  <label>Financial Type</label>
+                  <select
+                    className="form-select"
+                    value={dynamicFields.financialType || 'standard'}
+                    onChange={(e) => handleFieldChange('financialType', e.target.value)}
+                  >
+                    <option value="standard">Standard Access</option>
+                    <option value="premium">Premium Access</option>
+                    <option value="admin">Admin Access</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label>Transaction Type</label>
+                  <select
+                    className="form-select"
+                    value={dynamicFields.transactionType || 'all'}
+                    onChange={(e) => handleFieldChange('transactionType', e.target.value)}
+                  >
+                    <option value="all">All Transactions</option>
+                    <option value="view">View Only</option>
+                    <option value="create">Create Only</option>
+                    <option value="manage">Full Management</option>
+                  </select>
+                </div>
+                <div className="alert alert-info">
+                  <strong>Note:</strong> Generated credentials will be shown only once. Make sure to save them securely.
+                </div>
+              </div>
+            )}
 
             <div className="d-flex justify-content-between mt-4">
               {currentStep > 1 && (
