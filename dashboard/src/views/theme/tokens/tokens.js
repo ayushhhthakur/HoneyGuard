@@ -36,7 +36,6 @@ const Tokens = () => {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
   const [dynamicFields, setDynamicFields] = useState({})
-  const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-coreui-theme'));
   const fileInputRef = useRef(null)
 
   const categories = [
@@ -75,7 +74,10 @@ const Tokens = () => {
         label: 'AWS Service',
         required: true,
         options: [
-          { value: 's3', label: 'S3' }
+          { value: 's3', label: 'S3' },
+          { value: 'ec2', label: 'EC2' },
+          { value: 'lambda', label: 'Lambda' },
+          { value: 'dynamodb', label: 'DynamoDB' }
         ]
       }
     ],
@@ -86,9 +88,10 @@ const Tokens = () => {
         label: 'Financial Type',
         required: true,
         options: [
-          { value: 'standard', label: 'Standard Access' },
-          { value: 'premium', label: 'Premium Access' },
-          { value: 'admin', label: 'Admin Access' }
+          { value: 'credit_card', label: 'Credit Card' },
+          { value: 'bank_account', label: 'Bank Account' },
+          { value: 'api_key', label: 'Payment Gateway API Key' },
+          { value: 'crypto', label: 'Cryptocurrency' }
         ]
       },
       {
@@ -97,10 +100,9 @@ const Tokens = () => {
         label: 'Transaction Type',
         required: true,
         options: [
-          { value: 'all', label: 'All Transactions' },
-          { value: 'view', label: 'View Only' },
-          { value: 'create', label: 'Create Only' },
-          { value: 'manage', label: 'Full Management' }
+          { value: 'payment', label: 'Payment Processing' },
+          { value: 'refund', label: 'Refund Processing' },
+          { value: 'subscription', label: 'Subscription Management' }
         ]
       }
     ],
@@ -111,19 +113,18 @@ const Tokens = () => {
         label: 'Healthcare System',
         required: true,
         options: [
-          { value: 'ehr', label: 'Electronic Health Records (EHR)' },
-          { value: 'pms', label: 'Patient Management System (PMS)' },
-          { value: 'lab', label: 'Laboratory Information System (LIS)' },
-          { value: 'imaging', label: 'Medical Imaging (PACS)' }
+          { value: 'ehr', label: 'Electronic Health Records' },
+          { value: 'pms', label: 'Patient Management System' },
+          { value: 'lab', label: 'Laboratory System' },
+          { value: 'imaging', label: 'Medical Imaging' }
         ]
       },
       {
         type: 'text',
         name: 'patientIdFormat',
         label: 'Patient ID Format',
-        placeholder: 'e.g., MRN-####, PAT-###-##',
-        required: true,
-        helpText: 'Use # for digits, e.g., MRN-#### will generate IDs like MRN-1234'
+        placeholder: 'Enter patient ID format (e.g., MRN-####)',
+        required: true
       },
       {
         type: 'select',
@@ -131,9 +132,9 @@ const Tokens = () => {
         label: 'Access Level',
         required: true,
         options: [
-          { value: 'read', label: 'Read Only (View Records)' },
-          { value: 'write', label: 'Read/Write (Modify Records)' },
-          { value: 'admin', label: 'Administrative (Full Access)' }
+          { value: 'read', label: 'Read Only' },
+          { value: 'write', label: 'Read/Write' },
+          { value: 'admin', label: 'Administrative' }
         ]
       }
     ]
@@ -214,78 +215,24 @@ const Tokens = () => {
     </CCard>
   )
 
-  const getThemeStyles = () => {
-    const isDarkMode = currentTheme === 'dark';
-    return {
-      previewSection: {
-        backgroundColor: isDarkMode ? '#27293d' : '#ffffff',
-        color: isDarkMode ? '#ffffff' : '#333333',
-        padding: '20px',
-        borderRadius: '8px',
-        border: `1px solid ${isDarkMode ? '#2f2f45' : '#ebedef'}`
-      },
-      heading: {
-        color: isDarkMode ? '#ffffff' : '#333333',
-        borderBottom: `1px solid ${isDarkMode ? '#2f2f45' : '#ebedef'}`,
-        paddingBottom: '10px',
-        marginBottom: '15px'
-      },
-      label: {
-        color: isDarkMode ? '#a0aec0' : '#666666',
-        fontWeight: 'bold',
-        marginRight: '8px'
-      },
-      value: {
-        color: isDarkMode ? '#ffffff' : '#333333'
-      },
-      configSection: {
-        marginTop: '20px',
-        paddingTop: '15px',
-        borderTop: `1px solid ${isDarkMode ? '#2f2f45' : '#ebedef'}`
-      }
-    };
-  };
+  const renderPreview = () => (
+    <CCard>
+      <CCardHeader>Token Preview</CCardHeader>
+      <CCardBody>
+        <div className="preview-section">
+          <h5>Basic Information</h5>
+          <p><strong>Name:</strong> {tokenName}</p>
+          <p><strong>Category:</strong> {categories.find(c => c.value === selectedCategory)?.label}</p>
+          <p><strong>Description:</strong> {description}</p>
 
-  const renderPreview = () => {
-    const styles = getThemeStyles();
-    
-    return (
-      <CCard>
-        <CCardHeader style={styles.heading}>Token Preview</CCardHeader>
-        <CCardBody>
-          <div style={styles.previewSection}>
-            <h5 style={styles.heading}>Basic Information</h5>
-            <p>
-              <span style={styles.label}>Name:</span>
-              <span style={styles.value}>{tokenName}</span>
-            </p>
-            <p>
-              <span style={styles.label}>Category:</span>
-              <span style={styles.value}>
-                {categories.find(c => c.value === selectedCategory)?.label}
-              </span>
-            </p>
-            <p>
-              <span style={styles.label}>Description:</span>
-              <span style={styles.value}>{description}</span>
-            </p>
-
-            <div style={styles.configSection}>
-              <h5 style={styles.heading}>Configuration</h5>
-              {Object.entries(dynamicFields).map(([key, value]) => (
-                <p key={key}>
-                  <span style={styles.label}>{key}:</span>
-                  <span style={styles.value}>
-                    {value instanceof File ? value.name : value}
-                  </span>
-                </p>
-              ))}
-            </div>
-          </div>
-        </CCardBody>
-      </CCard>
-    );
-  };
+          <h5 className="mt-4">Configuration</h5>
+          {Object.entries(dynamicFields).map(([key, value]) => (
+            <p key={key}><strong>{key}:</strong> {value instanceof File ? value.name : value}</p>
+          ))}
+        </div>
+      </CCardBody>
+    </CCard>
+  )
 
   const renderField = (field) => {
     switch (field.type) {
@@ -333,9 +280,6 @@ const Tokens = () => {
               placeholder={field.placeholder}
               required={field.required}
             />
-            {field.helpText && (
-              <div className="form-text text-muted">{field.helpText}</div>
-            )}
           </div>
         )
       default:
@@ -391,172 +335,151 @@ const Tokens = () => {
     setError(null)
 
     try {
-      let response
-
-      if (selectedCategory === 'healthcare') {
-        response = await axios.post(`${API_URL}/generate-healthcare-token`, {
-          system: dynamicFields.healthcareSystem,
-          patientIdFormat: dynamicFields.patientIdFormat,
-          accessLevel: dynamicFields.accessLevel
-        })
-      } else if (selectedCategory === 'aws') {
-        // ... existing AWS token generation
-      } else if (selectedCategory === 'financial') {
-        const formData = new FormData();
-        formData.append('tokenName', tokenName);
-        formData.append('description', description);
-        formData.append('category', 'financial');
-        formData.append('financialType', dynamicFields.financialType || 'standard');
-        formData.append('transactionType', dynamicFields.transactionType || 'all');
-
-        response = await axios.post(`${API_URL}/generate-token`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-        if (response.data.success) {
-          // Store token and credentials in session storage
-          sessionStorage.setItem('financial_credentials', JSON.stringify({
-            token: response.data.token,
-            credentials: response.data.credentials
-          }));
-
-          // Show success message with credentials
-          toast.success(
-            <div>
-              <strong>Financial Token Generated Successfully!</strong>
-              <p>Keep these credentials safe:</p>
-              <div className="credential-box">
-                <p><strong>Username:</strong> {response.data.credentials.username}</p>
-                <p><strong>Password:</strong> {response.data.credentials.password}</p>
-                <p><strong>Token:</strong> {response.data.token}</p>
-                <p><strong>API Base URL:</strong> {`${API_URL}/finance`}</p>
-              </div>
-              <hr/>
-              <div className="warning-box">
-                <p>⚠️ IMPORTANT:</p>
-                <ul>
-                  <li>Save these credentials immediately</li>
-                  <li>They will not be shown again</li>
-                  <li>Keep them secure and confidential</li>
-                </ul>
-              </div>
-            </div>,
-            {
-              autoClose: false,
-              closeOnClick: false,
-              draggable: false,
-              className: 'financial-toast'
-            }
-          );
-
-          // Add custom styles for the toast
-          const style = document.createElement('style');
-          style.textContent = `
-            .financial-toast {
-              background: #fff;
-              color: #333;
-              max-width: 500px !important;
-              width: 100%;
-            }
-            .credential-box {
-              background: #f8f9fa;
-              padding: 15px;
-              border-radius: 5px;
-              margin: 10px 0;
-              border-left: 4px solid #321fdb;
-            }
-            .credential-box p {
-              margin: 5px 0;
-              font-family: monospace;
-              word-break: break-all;
-            }
-            .warning-box {
-              background: #fff3cd;
-              color: #856404;
-              padding: 10px;
-              border-radius: 5px;
-              margin-top: 10px;
-            }
-            .warning-box ul {
-              margin: 5px 0;
-              padding-left: 20px;
-            }
-          `;
-          document.head.appendChild(style);
-        }
-      } else {
-        // ... existing image token generation
+      if (!selectedCategory) {
+        throw new Error('Category is required')
       }
+      if (!tokenName || !description) {
+        throw new Error('Token name and description are required')
+      }
+
+      const fields = categoryFields[selectedCategory] || []
+      fields.forEach(field => {
+        if (field.required && !dynamicFields[field.name]) {
+          throw new Error(`${field.label} is required`)
+        }
+      })
+
+      const formData = new FormData()
+      formData.append('tokenName', tokenName)
+      formData.append('description', description)
+      formData.append('category', selectedCategory)
+
+      Object.entries(dynamicFields).forEach(([key, value]) => {
+        if (value instanceof File) {
+          formData.append(key, value)
+        } else {
+          formData.append(key, String(value))
+        }
+      })
+
+      const response = await axios.post(`${API_URL}/generate-token`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
 
       if (response.data.success) {
-        setToken(response.data.token)
-        
-        // Check if credentials exist and have required fields before showing toast
-        const credentials = response.data.credentials || {};
-        const hasCredentials = credentials && 
-          (credentials.username || credentials.password || credentials.endpoint);
-
-        if (hasCredentials) {
-          // Show credentials in a success toast
-          toast.success(
-            <div>
-              <strong>Token Generated Successfully!</strong>
-              <p>Credentials:</p>
-              {credentials.username && <p>Username: {credentials.username}</p>}
-              {credentials.password && <p>Password: {credentials.password}</p>}
-              {credentials.endpoint && <p>API Endpoint: {credentials.endpoint}</p>}
-              <p>Token: {response.data.token}</p>
-              <hr/>
-              <p className="text-warning">⚠️ Save these credentials now. They won't be shown again!</p>
-            </div>,
-            {
-              autoClose: false,
-              closeOnClick: false
-            }
-          );
-        } else {
-          // Show simple success message if no credentials
-          toast.success(
-            <div>
-              <strong>Token Generated Successfully!</strong>
-              <p>Your token: {response.data.token}</p>
-            </div>
-          );
+        const generatedToken = response.data.token
+        setToken(generatedToken)
+        if (response.data.imageUrl) {
+          setImageUrl(response.data.imageUrl)
         }
         
-        navigate('/tokens/logs')
+        // Enhanced success toast
+        toast.success(
+          <div className="d-flex align-items-center">
+            <CIcon 
+              icon={cilMoney} 
+              className="me-2 text-success" 
+              style={{ width: '20px', height: '20px' }}
+            />
+            <div>
+              <strong>Success!</strong>
+              <div className="text-sm">Token generated successfully</div>
+            </div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            style: {
+              background: '#fff',
+              borderLeft: '4px solid #2eb85c',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            },
+          }
+        )
+        
+        // Navigate after a short delay to allow toast to be seen
+        setTimeout(() => {
+          navigate(`/utils/track/${generatedToken}`)
+        }, 1000)
       } else {
-        throw new Error(response.data.message || 'Failed to generate token')
+        setError(response.data.error || 'Failed to generate token')
+        // Enhanced error toast
+        toast.error(
+          <div className="d-flex align-items-center">
+            <CIcon 
+              icon={cilMedicalCross} 
+              className="me-2 text-danger" 
+              style={{ width: '20px', height: '20px' }}
+            />
+            <div>
+              <strong>Error!</strong>
+              <div className="text-sm">{response.data.error || 'Failed to generate token'}</div>
+            </div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            style: {
+              background: '#fff',
+              borderLeft: '4px solid #e55353',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            },
+          }
+        )
       }
     } catch (err) {
-      console.error('Error:', err)
-      setError(err.message || 'An error occurred while generating the token')
-      toast.error('Failed to generate token: ' + (err.message || 'Unknown error'))
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to generate token'
+      setError(errorMessage)
+      // Enhanced error toast for caught errors
+      toast.error(
+        <div className="d-flex align-items-center">
+          <CIcon 
+            icon={cilPlus} 
+            className="me-2 text-danger" 
+            style={{ width: '20px', height: '20px' }}
+          />
+          <div>
+            <strong>Error!</strong>
+            <div className="text-sm">{errorMessage}</div>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          style: {
+            background: '#fff',
+            borderLeft: '4px solid #e55353',
+            borderRadius: '4px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          },
+        }
+      )
     } finally {
       setLoading(false)
     }
   }
-
-  // Theme observer setup
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-coreui-theme') {
-          const newTheme = document.documentElement.getAttribute('data-coreui-theme');
-          setCurrentTheme(newTheme);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-coreui-theme']
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <CContainer className="tokens-container">
@@ -608,39 +531,6 @@ const Tokens = () => {
 
           <form onSubmit={handleSubmit}>
             {renderStepContent()}
-
-            {selectedCategory === 'financial' && (
-              <div className="dynamic-fields">
-                <div className="mb-3">
-                  <label>Financial Type</label>
-                  <select
-                    className="form-select"
-                    value={dynamicFields.financialType || 'standard'}
-                    onChange={(e) => handleFieldChange('financialType', e.target.value)}
-                  >
-                    <option value="standard">Standard Access</option>
-                    <option value="premium">Premium Access</option>
-                    <option value="admin">Admin Access</option>
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <label>Transaction Type</label>
-                  <select
-                    className="form-select"
-                    value={dynamicFields.transactionType || 'all'}
-                    onChange={(e) => handleFieldChange('transactionType', e.target.value)}
-                  >
-                    <option value="all">All Transactions</option>
-                    <option value="view">View Only</option>
-                    <option value="create">Create Only</option>
-                    <option value="manage">Full Management</option>
-                  </select>
-                </div>
-                <div className="alert alert-info">
-                  <strong>Note:</strong> Generated credentials will be shown only once. Make sure to save them securely.
-                </div>
-              </div>
-            )}
 
             <div className="d-flex justify-content-between mt-4">
               {currentStep > 1 && (
@@ -729,9 +619,11 @@ const Tokens = () => {
           }
           
           .preview-section {
-            background: #f8f9fa;
+            background: var(--cui-body-bg);
+            border: 1px solid var(--cui-border-color);
             padding: 20px;
             border-radius: 8px;
+            color: var(--cui-body-color);
           }
           
           .step-indicator::after {
