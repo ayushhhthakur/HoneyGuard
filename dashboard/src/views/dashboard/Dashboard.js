@@ -43,9 +43,7 @@ import {
   cilUserFemale,
 } from '@coreui/icons'
 
-import WidgetsBrand from '../widgets/WidgetsBrand'
 import WidgetsDropdown from '../widgets/WidgetsDropdown'
-import MainChart from './MainChart'
 
 const Dashboard = () => {
   const progressExample = [
@@ -136,7 +134,7 @@ const Dashboard = () => {
           </CRow>
         </CCardFooter>
       </CCard> */}
-      {/* <WidgetsBrand className="mb-4" withCharts /> */}
+      {/* < className="mb-4" withCharts /> */}
       {/* <CRow>
         <CCol xs>
           <CCard className="mb-4">

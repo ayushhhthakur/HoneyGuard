@@ -11,7 +11,6 @@ const Category = React.lazy(() => import('./views/theme/category/Category.js'))
 
 // Add this to your imports
 
-const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
@@ -23,7 +22,6 @@ const routes = [
   { path: '/utils/logs', name: 'Logs', element: Log },
   { path: '/utils/maps', name: 'Maps', element: Maps },
   { path: '/utils/category', name: 'Category', element: Category },
-  { path: '/widgets', name: 'Widgets', element: Widgets },
 ]
 
 export default routes
