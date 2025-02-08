@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
+
 import Contact from './pages/Contact';
 
 function App() {
