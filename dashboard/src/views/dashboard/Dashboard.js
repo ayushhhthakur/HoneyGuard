@@ -1,116 +1,175 @@
-import React from 'react'
+import React, { useState } from 'react'
 import classNames from 'classnames'
+import './Dashboard.css'
 
 import {
-  CAvatar,
   CButton,
   CButtonGroup,
   CCard,
   CCardBody,
   CCardFooter,
-  CCardHeader,
   CCol,
   CProgress,
   CRow,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
+  CBadge,
+  CTooltip,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
-  cibCcAmex,
-  cibCcApplePay,
-  cibCcMastercard,
-  cibCcPaypal,
-  cibCcStripe,
-  cibCcVisa,
-  cibGoogle,
-  cibFacebook,
-  cibLinkedin,
-  cifBr,
-  cifEs,
-  cifFr,
-  cifIn,
-  cifPl,
-  cifUs,
-  cibTwitter,
   cilCloudDownload,
+  cilReload,
+  cilCalendar,
+  cilArrowTop,
+  cilArrowBottom,
   cilPeople,
   cilUser,
-  cilUserFemale,
+  cilSpeedometer,
+  cilChart,
+  cilOptions,
 } from '@coreui/icons'
 
 import WidgetsDropdown from '../widgets/WidgetsDropdown'
 import MainChart from './MainChart'
 
 const Dashboard = () => {
-  const progressExample = [
-    { title: 'Visits', value: '29.703 Users', percent: 40, color: 'success' },
-    { title: 'Unique', value: '24.093 Users', percent: 20, color: 'info' },
-    { title: 'Pageviews', value: '78.706 Views', percent: 60, color: 'warning' },
-    { title: 'New Users', value: '22.123 Users', percent: 80, color: 'danger' },
-    { title: 'Bounce Rate', value: 'Average Rate', percent: 40.15, color: 'primary' },
+  const [timeRange, setTimeRange] = useState('Month')
+  const [selectedCard, setSelectedCard] = useState(null)
+
+  // Static progress data with enhanced information
+  const progressData = [
+    { 
+      title: 'Total Visits',
+      value: '29,703',
+      unit: 'Users',
+      percent: 40,
+      color: 'success',
+      trend: '+12.5%',
+      trendUp: true,
+      icon: cilPeople,
+      details: 'Total number of visitors this period'
+    },
+    { 
+      title: 'Unique Visitors',
+      value: '24,093',
+      unit: 'Users',
+      percent: 20,
+      color: 'info',
+      trend: '+5.8%',
+      trendUp: true,
+      icon: cilUser,
+      details: 'Number of unique visitors'
+    },
+    { 
+      title: 'Page Views',
+      value: '78,706',
+      unit: 'Views',
+      percent: 60,
+      color: 'warning',
+      trend: '-2.4%',
+      trendUp: false,
+      icon: cilChart,
+      details: 'Total page views across all sessions'
+    },
+    { 
+      title: 'Performance',
+      value: '94.2',
+      unit: 'Score',
+      percent: 80,
+      color: 'danger',
+      trend: '+8.1%',
+      trendUp: true,
+      icon: cilSpeedometer,
+      details: 'Overall system performance score'
+    },
+    { 
+      title: 'Bounce Rate',
+      value: '40.15',
+      unit: '%',
+      percent: 40.15,
+      color: 'primary',
+      trend: '-1.5%',
+      trendUp: false,
+      icon: cilOptions,
+      details: 'Percentage of visitors who navigate away after one page'
+    },
   ]
 
-  const progressGroupExample1 = [
-    { title: 'Monday', value1: 34, value2: 78 },
-    { title: 'Tuesday', value1: 56, value2: 94 },
-    { title: 'Wednesday', value1: 12, value2: 67 },
-    { title: 'Thursday', value1: 43, value2: 91 },
-    { title: 'Friday', value1: 22, value2: 73 },
-    { title: 'Saturday', value1: 53, value2: 82 },
-    { title: 'Sunday', value1: 9, value2: 69 },
-  ]
+  const handleRefresh = () => {
+    console.log('Refresh clicked')
+  }
 
-  const progressGroupExample2 = [
-    { title: 'Male', icon: cilUser, value: 53 },
-    { title: 'Female', icon: cilUserFemale, value: 43 },
-  ]
+  const handleTimeRangeChange = (range) => {
+    setTimeRange(range)
+  }
 
-  const progressGroupExample3 = [
-    { title: 'Organic Search', icon: cibGoogle, percent: 56, value: '191,235' },
-    { title: 'Facebook', icon: cibFacebook, percent: 15, value: '51,223' },
-    { title: 'Twitter', icon: cibTwitter, percent: 11, value: '37,564' },
-    { title: 'LinkedIn', icon: cibLinkedin, percent: 8, value: '27,319' },
-  ]
+  const handleDownload = () => {
+    console.log('Download clicked')
+  }
 
+  const handleCardClick = (index) => {
+    setSelectedCard(selectedCard === index ? null : index)
+  }
 
   return (
     <>
       <WidgetsDropdown className="mb-4" />
-      <CCard className="mb-4">
+      <CCard className="mb-4 shadow-sm">
         <CCardBody>
           <CRow>
             <CCol sm={5}>
-              <h4 id="traffic" className="card-title mb-0">
+              <h4 id="traffic" className="card-title mb-0 d-flex align-items-center">
+                <CIcon icon={cilChart} className="me-2" />
                 Traffic
               </h4>
-              <div className="small text-body-secondary">January - July 2023</div>
+              <div className="small text-body-secondary">Real-time Analytics</div>
             </CCol>
             <CCol sm={7} className="d-none d-md-block">
-              <CButton color="primary" className="float-end">
-                <CIcon icon={cilCloudDownload} />
-              </CButton>
-              <CButtonGroup className="float-end me-3">
-                {['Day', 'Month', 'Year'].map((value) => (
-                  <CButton
-                    color="outline-secondary"
-                    key={value}
-                    className="mx-0"
-                    active={value === 'Month'}
+              <CButtonGroup className="float-end">
+                <CTooltip content="Refresh Data">
+                  <CButton 
+                    color="primary"
+                    onClick={handleRefresh}
+                    className="me-2 btn-icon"
                   >
-                    {value}
+                    <CIcon icon={cilReload} />
                   </CButton>
-                ))}
+                </CTooltip>
+                <CTooltip content="Download Report">
+                  <CButton 
+                    color="primary"
+                    onClick={handleDownload}
+                    className="me-2 btn-icon"
+                  >
+                    <CIcon icon={cilCloudDownload} />
+                  </CButton>
+                </CTooltip>
+                <CDropdown>
+                  <CDropdownToggle color="secondary" className="d-flex align-items-center">
+                    <CIcon icon={cilCalendar} className="me-2" />
+                    {timeRange}
+                  </CDropdownToggle>
+                  <CDropdownMenu>
+                    {['Day', 'Week', 'Month', 'Year'].map((range) => (
+                      <CDropdownItem 
+                        key={range}
+                        onClick={() => handleTimeRangeChange(range)}
+                        active={range === timeRange}
+                      >
+                        {range}
+                      </CDropdownItem>
+                    ))}
+                  </CDropdownMenu>
+                </CDropdown>
               </CButtonGroup>
             </CCol>
           </CRow>
-          <MainChart />
+          <MainChart key={timeRange} />
         </CCardBody>
-        <CCardFooter>
+        <CCardFooter className="bg-transparent">
           <CRow
             xs={{ cols: 1, gutter: 4 }}
             sm={{ cols: 2 }}
@@ -118,18 +177,53 @@ const Dashboard = () => {
             xl={{ cols: 5 }}
             className="mb-2 text-center"
           >
-            {progressExample.map((item, index, items) => (
+            {progressData.map((item, index) => (
               <CCol
                 className={classNames({
-                  'd-none d-xl-block': index + 1 === items.length,
+                  'd-none d-xl-block': index === progressData.length - 1,
                 })}
                 key={index}
               >
-                <div className="text-body-secondary">{item.title}</div>
-                <div className="fw-semibold text-truncate">
-                  {item.value} ({item.percent}%)
+                <div 
+                  className={`stat-card p-3 rounded ${selectedCard === index ? 'selected' : ''}`}
+                  onClick={() => handleCardClick(index)}
+                >
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="text-body-secondary d-flex align-items-center">
+                      <CIcon icon={item.icon} className="me-2" />
+                      {item.title}
+                    </div>
+                    <CTooltip content={item.details}>
+                      <CBadge color={item.color} shape="rounded-pill" className="trend-badge">
+                        <CIcon 
+                          icon={item.trendUp ? cilArrowTop : cilArrowBottom} 
+                          className="me-1"
+                          size="sm"
+                        />
+                        {item.trend}
+                      </CBadge>
+                    </CTooltip>
+                  </div>
+                  <div className="fw-bold fs-4 mb-2">
+                    {item.value}
+                    <span className="fs-6 ms-1 text-body-secondary">{item.unit}</span>
+                  </div>
+                  <CProgress 
+                    thin 
+                    className="mt-2 progress-animated" 
+                    color={item.color}
+                    value={item.percent}
+                    animated
+                  />
+                  {selectedCard === index && (
+                    <div className="card-details mt-3 text-start small">
+                      <div className="text-body-secondary">{item.details}</div>
+                      <div className="mt-2">
+                        <strong>Last updated:</strong> {new Date().toLocaleTimeString()}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <CProgress thin className="mt-2" color={item.color} value={item.percent} />
               </CCol>
             ))}
           </CRow>
