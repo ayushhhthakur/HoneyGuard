@@ -14,7 +14,7 @@ function Pricing() {
     {
       icon: faShieldAlt,
       name: "Starter",
-      price: "499",
+      price: "5",
       description: "Perfect for small projects and startups",
       features: [
         "5 Dynamic Honeytokens",
@@ -28,7 +28,7 @@ function Pricing() {
     {
       icon: faRocket,
       name: "Professional",
-      price: "999",
+      price: "10",
       description: "Ideal for growing projects and businesses",
       features: [
         "20 Dynamic Honeytokens",
