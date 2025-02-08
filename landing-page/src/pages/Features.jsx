@@ -57,7 +57,7 @@ function Features() {
         "Geolocation tracking"
       ]
     },
-    {
+    /*{
       icon: faGears,
       title: "System Integration",
       description: "Seamless integration with your existing security infrastructure.",
@@ -67,16 +67,16 @@ function Features() {
         "Cloud storage monitoring",
         "Cross-platform coverage"
       ]
-    },
+    },*/
     {
       icon: faChartLine,
       title: "Advanced Analytics",
       description: "Comprehensive dashboard for monitoring and analyzing threats.",
       details: [
-        "Attack visualization",
-        "Trend analysis",
-        "Threat intelligence",
-        "Custom reporting"
+        "GenAI Integration",
+        "Threat Intelligence Correlation",
+        "User & Entity Behavior Analytics (UEBA)",
+        "Risk Scoring & Prioritization"
       ]
     }
   ];
