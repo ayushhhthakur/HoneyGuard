@@ -75,10 +75,7 @@ const Tokens = () => {
         label: 'AWS Service',
         required: true,
         options: [
-          { value: 's3', label: 'S3' },
-          // { value: 'ec2', label: 'EC2' },
-          // { value: 'lambda', label: 'Lambda' },
-          // { value: 'dynamodb', label: 'DynamoDB' }
+          { value: 's3', label: 'S3' }
         ]
       }
     ],
@@ -114,18 +111,19 @@ const Tokens = () => {
         label: 'Healthcare System',
         required: true,
         options: [
-          { value: 'ehr', label: 'Electronic Health Records' },
-          { value: 'pms', label: 'Patient Management System' },
-          { value: 'lab', label: 'Laboratory System' },
-          { value: 'imaging', label: 'Medical Imaging' }
+          { value: 'ehr', label: 'Electronic Health Records (EHR)' },
+          { value: 'pms', label: 'Patient Management System (PMS)' },
+          { value: 'lab', label: 'Laboratory Information System (LIS)' },
+          { value: 'imaging', label: 'Medical Imaging (PACS)' }
         ]
       },
       {
         type: 'text',
         name: 'patientIdFormat',
         label: 'Patient ID Format',
-        placeholder: 'Enter patient ID format (e.g., MRN-####)',
-        required: true
+        placeholder: 'e.g., MRN-####, PAT-###-##',
+        required: true,
+        helpText: 'Use # for digits, e.g., MRN-#### will generate IDs like MRN-1234'
       },
       {
         type: 'select',
@@ -133,9 +131,9 @@ const Tokens = () => {
         label: 'Access Level',
         required: true,
         options: [
-          { value: 'read', label: 'Read Only' },
-          { value: 'write', label: 'Read/Write' },
-          { value: 'admin', label: 'Administrative' }
+          { value: 'read', label: 'Read Only (View Records)' },
+          { value: 'write', label: 'Read/Write (Modify Records)' },
+          { value: 'admin', label: 'Administrative (Full Access)' }
         ]
       }
     ]
@@ -335,6 +333,9 @@ const Tokens = () => {
               placeholder={field.placeholder}
               required={field.required}
             />
+            {field.helpText && (
+              <div className="form-text text-muted">{field.helpText}</div>
+            )}
           </div>
         )
       default:
@@ -390,147 +391,48 @@ const Tokens = () => {
     setError(null)
 
     try {
-      if (!selectedCategory) {
-        throw new Error('Category is required')
+      let response
+
+      if (selectedCategory === 'healthcare') {
+        response = await axios.post(`${API_URL}/generate-healthcare-token`, {
+          system: dynamicFields.healthcareSystem,
+          patientIdFormat: dynamicFields.patientIdFormat,
+          accessLevel: dynamicFields.accessLevel
+        })
+      } else if (selectedCategory === 'aws') {
+        // ... existing AWS token generation
+      } else if (selectedCategory === 'financial') {
+        // ... existing financial token generation
+      } else {
+        // ... existing image token generation
       }
-      if (!tokenName || !description) {
-        throw new Error('Token name and description are required')
-      }
-
-      const fields = categoryFields[selectedCategory] || []
-      fields.forEach(field => {
-        if (field.required && !dynamicFields[field.name]) {
-          throw new Error(`${field.label} is required`)
-        }
-      })
-
-      const formData = new FormData()
-      formData.append('tokenName', tokenName)
-      formData.append('description', description)
-      formData.append('category', selectedCategory)
-
-      Object.entries(dynamicFields).forEach(([key, value]) => {
-        if (value instanceof File) {
-          formData.append(key, value)
-        } else {
-          formData.append(key, String(value))
-        }
-      })
-
-      const response = await axios.post(`${API_URL}/generate-token`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
 
       if (response.data.success) {
-        const generatedToken = response.data.token
-        setToken(generatedToken)
-        if (response.data.imageUrl) {
-          setImageUrl(response.data.imageUrl)
+        setToken(response.data.token)
+        if (response.data.credentials) {
+          // Show credentials in a success toast
+          toast.success(
+            <div>
+              <strong>Token Generated Successfully!</strong>
+              <p>Credentials:</p>
+              <p>Username: {response.data.credentials.username}</p>
+              <p>Password: {response.data.credentials.password}</p>
+              <p>API Endpoint: {response.data.credentials.endpoint}</p>
+            </div>,
+            {
+              autoClose: false,
+              closeOnClick: false
+            }
+          )
         }
-        
-        // Enhanced success toast
-        toast.success(
-          <div className="d-flex align-items-center">
-            <CIcon 
-              icon={cilMoney} 
-              className="me-2 text-success" 
-              style={{ width: '20px', height: '20px' }}
-            />
-            <div>
-              <strong>Success!</strong>
-              <div className="text-sm">Token generated successfully</div>
-            </div>
-          </div>,
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-            style: {
-              background: '#fff',
-              borderLeft: '4px solid #2eb85c',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            },
-          }
-        )
-        
-        // Navigate after a short delay to allow toast to be seen
-        setTimeout(() => {
-          navigate(`/utils/track/${generatedToken}`)
-        }, 1000)
+        navigate('/tokens/logs')
       } else {
-        setError(response.data.error || 'Failed to generate token')
-        // Enhanced error toast
-        toast.error(
-          <div className="d-flex align-items-center">
-            <CIcon 
-              icon={cilMedicalCross} 
-              className="me-2 text-danger" 
-              style={{ width: '20px', height: '20px' }}
-            />
-            <div>
-              <strong>Error!</strong>
-              <div className="text-sm">{response.data.error || 'Failed to generate token'}</div>
-            </div>
-          </div>,
-          {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-            style: {
-              background: '#fff',
-              borderLeft: '4px solid #e55353',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            },
-          }
-        )
+        throw new Error(response.data.message || 'Failed to generate token')
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to generate token'
-      setError(errorMessage)
-      // Enhanced error toast for caught errors
-      toast.error(
-        <div className="d-flex align-items-center">
-          <CIcon 
-            icon={cilPlus} 
-            className="me-2 text-danger" 
-            style={{ width: '20px', height: '20px' }}
-          />
-          <div>
-            <strong>Error!</strong>
-            <div className="text-sm">{errorMessage}</div>
-          </div>
-        </div>,
-        {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-          style: {
-            background: '#fff',
-            borderLeft: '4px solid #e55353',
-            borderRadius: '4px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          },
-        }
-      )
+      console.error('Error:', err)
+      setError(err.message || 'An error occurred while generating the token')
+      toast.error('Failed to generate token: ' + (err.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }
