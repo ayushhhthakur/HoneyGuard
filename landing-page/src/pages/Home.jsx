@@ -16,7 +16,7 @@ function Home() {
     {
       icon: faShieldHalved,
       title: 'Dynamic Honeytokens',
-      description: 'AI-powered generation of realistic honeytokens that mimic your infrastructure',
+      description: 'Generation of realistic honeytokens that mimic your infrastructure',
     },
     {
       icon: faLock,
@@ -70,7 +70,7 @@ function Home() {
                 />
               </h1>
               <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto md:mx-0">
-                Advanced threat detection through AI-powered dynamic honeytoken generation. Protect your infrastructure with intelligent decoys and real-time monitoring.
+                Advanced threat detection through dynamic honeytoken generation. Protect your infrastructure with intelligent decoys and real-time monitoring.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <motion.button
