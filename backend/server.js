@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import nodemailer from 'nodemailer';
 import { spawn } from 'child_process';
+import fetch from 'node-fetch';
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ const PORT = process.env.PORT || 6000;
 // Basic CORS setup
 app.use(cors(
   {
-    origin: ['http://localhost:3000', 'https://honeyguard.vercel.app'],
+    origin: ['http://localhost:3000', 'http://localhost:5000', 'https://honeyguard.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }
@@ -61,6 +62,18 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     persistSession: false
   }
 });
+
+// Verify Supabase connection
+async function verifySupabaseConnection() {
+  try {
+    const { data, error } = await supabase.from('token_logs').select('count').limit(1);
+    if (error) throw error;
+    console.log('Successfully connected to Supabase');
+  } catch (error) {
+    console.error('Failed to connect to Supabase:', error.message);
+    process.exit(1);
+  }
+}
 
 // Configure Express to trust Render's proxy
 app.set('trust proxy', true);
@@ -197,18 +210,26 @@ const startS3Monitor = () => {
 };
 
 // Test Supabase connection on startup
-const testSupabaseConnection = async () => {
+async function testSupabaseConnection() {
   try {
-    const { data, error } = await supabase.from('tokens').select('count').limit(1);
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('count(*)', { count: 'exact' });
+
     if (error) throw error;
-    console.log('Successfully connected to Supabase');
     
-    // Start S3 Monitor after successful database connection
-    startS3Monitor();
+    console.log('Successfully connected to Supabase');
+    return true;
   } catch (error) {
-    console.error('Error connecting to Supabase:', error);
+    console.error('Error connecting to Supabase:', {
+      message: error.message,
+      details: error.stack,
+      hint: error.hint || '',
+      code: error.code || ''
+    });
+    return false;
   }
-};
+}
 
 testSupabaseConnection();
 
@@ -421,15 +442,12 @@ app.get('/test-email', async (req, res) => {
         </div>
       </div>
     `;
-    console.log('Test content created');
-
-    console.log('Calling sendEmailNotification...');
+    
     await sendEmailNotification(
       'HoneyGuard Test Email',
       testContent
     );
 
-    console.log('Email notification completed successfully');
     res.json({ 
       success: true, 
       message: 'Test email sent successfully. Check your inbox (and spam folder).' 
@@ -1059,7 +1077,7 @@ app.get('/fetch-ip', async (req, res) => {
             city: storedData.city || 'Unknown',
             country: storedData.country || 'Unknown',
             region: storedData.region || 'Unknown',
-            timezone: storedData.timezone || 'Unknown',
+            timezone: storedData.timezone || 'UTC',
             isp: storedData.isp || 'Unknown'
           };
         }
@@ -1306,111 +1324,88 @@ app.delete('/tokens/:token', async (req, res) => {
 // Token tracking endpoint
 app.post('/track-token', async (req, res) => {
   console.log('\n=== Token Tracking Endpoint Called ===');
-  const { token, ip, timestamp, userAgent, requestData } = req.body;
-  console.log('Received tracking data:', { token, ip, timestamp, userAgent });
-
   try {
-    // Insert tracking data into Supabase
-    console.log('Inserting tracking data into database...');
-    const { data, error } = await supabase
-      .from('token_tracking')
-      .insert([
-        {
-          token,
-          ip_address: ip,
-          timestamp,
-          user_agent: userAgent,
-          request_data: requestData
-        }
-      ]);
+    const { token, ip_address, timestamp, user_agent, country, region, city, timezone, isp, request_body, metadata } = req.body;
+    console.log('Received tracking data:', { token, ip_address, timestamp });
 
-    if (error) {
-      console.error('Database insertion error:', error);
-      throw error;
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token is required'
+      });
     }
 
-    // Fetch token details
-    console.log('Fetching token details...');
+    // First check if token exists in tokens table
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
-      .select('*')
+      .select('id')
       .eq('token', token)
       .single();
 
-    if (tokenError) {
-      console.error('Error fetching token details:', tokenError);
-      throw tokenError;
+    if (tokenError || !tokenData) {
+      console.error('Token validation error:', tokenError || 'Token not found');
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid token',
+        details: 'The provided token does not exist in our records'
+      });
     }
 
-    // Fetch recent logs for this token
-    console.log('Fetching recent logs for token...');
-    const { data: recentLogs, error: logsError } = await supabase
-      .from('token_tracking')
-      .select('*')
-      .eq('token', token)
-      .order('timestamp', { ascending: false })
-      .limit(5);
+    // Insert tracking data into Supabase
+    console.log('Preparing log data...');
+    const logData = {
+      token,
+      event: 'token_access',
+      status: 'success',
+      ip_address: ip_address || req.ip,
+      user_agent: user_agent || '',
+      details: `Token accessed from ${city || 'unknown location'}`,
+      timestamp: timestamp || new Date().toISOString(),
+      country: country || 'Unknown',
+      region: region || 'Unknown',
+      city: city || 'Unknown',
+      timezone: timezone || 'UTC',
+      isp: isp || 'Unknown',
+      metadata: {
+        ...metadata,
+        tracked_at: new Date().toISOString(),
+        token_id: tokenData.id // Include the token's ID from tokens table
+      },
+      request_body: request_body || {}
+    };
 
-    if (logsError) {
-      console.error('Error fetching token logs:', logsError);
-      throw logsError;
+    console.log('Inserting data into Supabase:', JSON.stringify(logData, null, 2));
+
+    const { data, error } = await supabase
+      .from('token_logs')
+      .insert([logData])
+      .select();
+
+    if (error) {
+      console.error('Database insertion error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to log token activity',
+        details: error.message,
+        hint: error.hint,
+        code: error.code
+      });
     }
 
-    // Create email content
-    console.log('Preparing email content...');
-    const emailContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #321fdb;">🚨 Token Usage Alert</h2>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #321fdb;">Token Details</h3>
-          <p><strong>Token:</strong> ${token}</p>
-          <p><strong>Created By:</strong> ${tokenData.created_by || 'N/A'}</p>
-          <p><strong>Created At:</strong> ${new Date(tokenData.created_at).toLocaleString()}</p>
-        </div>
+    console.log('Successfully logged token activity:', data);
+    return res.json({
+      success: true,
+      message: 'Token activity logged successfully',
+      data: data[0]
+    });
 
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #321fdb;">Latest Usage</h3>
-          <p><strong>IP Address:</strong> ${ip}</p>
-          <p><strong>Timestamp:</strong> ${new Date(timestamp).toLocaleString()}</p>
-          <p><strong>User Agent:</strong> ${userAgent}</p>
-          ${requestData ? `<p><strong>Request Data:</strong> ${JSON.stringify(requestData, null, 2)}</p>` : ''}
-        </div>
-
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #321fdb;">Recent Activity Logs</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr style="background: #e9ecef;">
-              <th style="padding: 8px; text-align: left;">Timestamp</th>
-              <th style="padding: 8px; text-align: left;">IP Address</th>
-              <th style="padding: 8px; text-align: left;">User Agent</th>
-            </tr>
-            ${recentLogs.map((log, index) => `
-              <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8f9fa'};">
-                <td style="padding: 8px;">${new Date(log.timestamp).toLocaleString()}</td>
-                <td style="padding: 8px;">${log.ip_address}</td>
-                <td style="padding: 8px;">${log.user_agent}</td>
-              </tr>
-            `).join('')}
-          </table>
-        </div>
-      </div>
-    `;
-
-    // Send email notification
-    console.log('Sending email notification...');
-    await sendEmailNotification(
-      `🚨 Token Usage Alert: ${token}`,
-      emailContent
-    );
-
-    console.log('Token tracking process completed successfully');
-    res.json({ success: true });
   } catch (error) {
-    console.error('Token tracking error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    console.error('Error in track-token endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An error occurred while tracking token activity',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -1581,9 +1576,20 @@ app.get('/utils/track/stats/:token', async (req, res) => {
   res.json(browserLeaks);
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Server Configuration
+const FRONTEND_URL_DEV = process.env.FRONTEND_URL_DEV || 'http://localhost:8000';
+
+// Verify Supabase connection before starting server
+verifySupabaseConnection().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n=== HoneyGuard Backend Server ===`);
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Frontend URL: ${FRONTEND_URL_DEV}`);
+  });
+}).catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 // Handle graceful shutdown
