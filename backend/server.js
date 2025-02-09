@@ -1535,6 +1535,31 @@ app.get('/api/stats/activity', async (req, res) => {
   }
 });
 
+app.get('/utils/track/stats/:token', async (req, res) => {
+  const ip = requestIp.getClientIp(req) || 'Unknown';
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  const acceptLanguage = req.headers['accept-language'] || 'Unknown';
+  const geo = geoip.lookup(ip) || {};
+
+  const browserLeaks = {
+      ipAddress: ip,
+      hostname: req.hostname,
+      location: {
+          country: geo.country || 'Unknown',
+          state: geo.region || 'Unknown',
+          city: geo.city || 'Unknown',
+          coordinates: geo.ll || [],
+      },
+      isp: geo.org || 'Unknown',
+      timezone: geo.timezone || 'Unknown',
+      userAgent,
+      acceptLanguage,
+      httpHeaders: req.headers,
+  };
+
+  res.json(browserLeaks);
+});
+
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

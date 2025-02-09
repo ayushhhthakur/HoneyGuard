@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../../config/api.js'
 import {
@@ -20,17 +20,22 @@ import {
   CListGroup,
   CListGroupItem,
   CLink,
+  CButtonGroup,
+  CButton,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilCopy } from '@coreui/icons';
 
 const TrackToken = () => {
   const { token } = useParams();
+  const navigate = useNavigate(); // Fix: Call useNavigate as a function
   const [tokenData, setTokenData] = useState(null);
   const [stats, setStats] = useState([]); // Ensure it's always an array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+ 
 
+  
   useEffect(() => {
     // Replace the hardcoded URLs with API_URL
     const fetchTokenData = async () => {
@@ -79,6 +84,10 @@ const TrackToken = () => {
     navigator.clipboard.writeText(text);
     alert('Copied to clipboard!');
   }, []);
+
+  const redirectToStats = useCallback(() => {
+    navigate(`/utils/track/stats/${token}`);
+  }, [navigate, token]);
 
   if (loading) {
     return (
@@ -270,7 +279,14 @@ const TrackToken = () => {
                       <CTableDataCell>{stat.timezone}</CTableDataCell>
                       <CTableDataCell>{stat.isp}</CTableDataCell>
                       <CTableDataCell>{stat.token}</CTableDataCell>
-                      <CTableDataCell>{stat.user_agent}</CTableDataCell>
+                      <CTableDataCell>
+                        <CButtonGroup>
+                          <CButton
+                            color="primary"
+                            onClick={redirectToStats}
+                          >View</CButton>
+                        </CButtonGroup>
+                      </CTableDataCell>
                     </CTableRow>
                   ))}
                 </CTableBody>
