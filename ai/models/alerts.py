@@ -7,6 +7,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.preprocessing import StandardScaler
 from supabase import create_client, Client
+from token_notifications import TokenNotificationManager
 
 # Supabase credentials
 SUPABASE_URL="https://uazhbdkfjvbdhsxvkkru.supabase.co"
@@ -15,6 +16,9 @@ SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
 # Connect to Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Initialize notification manager
+notification_manager = TokenNotificationManager()
 
 # Fetch data from Supabase
 response = supabase.table("token_logs").select("*").execute()
@@ -142,6 +146,25 @@ def send_webhook_alert(ip, event, risk_score, risk_level, explanation, tokens):
 # Trigger alerts for high-risk anomalies
 high_risk_alerts = df[df["risk_level"] == "Low-Risk"]
 for _, row in high_risk_alerts.iterrows():
+    # Send webhook alert
     send_webhook_alert(row["ip_address"], row["event"], row["risk_score"], row["risk_level"], row["anomaly_explanation"], tokens_used)
+    
+    # Send email notification for token usage
+    token_data = {
+        "type": row.get("token_type", "unknown"),
+        "name": row.get("token_name", "Unknown Token"),
+        "description": row.get("token_description", ""),
+        "created_at": row.get("token_created_at", "")
+    }
+    
+    access_details = {
+        "ip_address": row["ip_address"],
+        "browser": row.get("browser", "N/A"),
+        "device": row.get("device", "N/A"),
+        "os": row.get("os", "N/A"),
+        "location": row.get("location", "N/A")
+    }
+    
+    notification_manager.send_token_usage_notification(token_data, access_details)
 
 print("Alert processing completed!")
