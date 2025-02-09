@@ -2,7 +2,7 @@ GETUP LICENSE
 Version 1.0, February 2025
 
 PREAMBLE
-This License governs the use, reproduction, modification, distribution, and deployment of the software project ("Software"). Any individual, entity, or organization (hereinafter "User") wishing to use the Software must adhere to the terms set forth below.
+This License governs the use, reproduction, modification, distribution, and deployment of the software project ("HoneyGuard"). Any individual, entity, or organization (hereinafter "User") wishing to use the Software must adhere to the terms set forth below.
 
 1. RESTRICTIONS ON USE
 1.1 No Use Without Permission
@@ -16,6 +16,7 @@ Personal projects
 Research or academic work
 Testing or evaluation
 Development or deployment on any platform
+
 1.3 No Derivative Works
 Users may not modify, create derivative works, or reverse-engineer any part of the Software.
 
