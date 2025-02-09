@@ -63,18 +63,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
-// Verify Supabase connection
-async function verifySupabaseConnection() {
-  try {
-    const { data, error } = await supabase.from('token_logs').select('count').limit(1);
-    if (error) throw error;
-    console.log('Successfully connected to Supabase');
-  } catch (error) {
-    console.error('Failed to connect to Supabase:', error.message);
-    process.exit(1);
-  }
-}
-
 // Configure Express to trust Render's proxy
 app.set('trust proxy', true);
 
@@ -1077,7 +1065,7 @@ app.get('/fetch-ip', async (req, res) => {
             city: storedData.city || 'Unknown',
             country: storedData.country || 'Unknown',
             region: storedData.region || 'Unknown',
-            timezone: storedData.timezone || 'UTC',
+            timezone: storedData.timezone || 'Unknown',
             isp: storedData.isp || 'Unknown'
           };
         }
@@ -1321,82 +1309,130 @@ app.delete('/tokens/:token', async (req, res) => {
   }
 });
 
+// Helper function to determine event type and status
+const determineEventType = (requestData) => {
+  const method = requestData?.method?.toUpperCase() || 'GET';
+  const path = requestData?.path || '';
+  
+  if (path.includes('/aws/')) {
+    return {
+      event: 'aws_access',
+      status: 'monitored',
+      details: 'AWS service access detected'
+    };
+  } else if (path.includes('/track/')) {
+    return {
+      event: 'token_tracking',
+      status: 'active',
+      details: 'Token tracking initiated'
+    };
+  } else if (method === 'POST') {
+    return {
+      event: 'token_access',
+      status: 'success',
+      details: 'Token accessed via POST request'
+    };
+  } else if (method === 'GET') {
+    return {
+      event: 'token_verification',
+      status: 'success',
+      details: 'Token verification request'
+    };
+  }
+  
+  return {
+    event: 'token_access',
+    status: 'success',
+    details: 'General token access'
+  };
+};
+
 // Token tracking endpoint
 app.post('/track-token', async (req, res) => {
   console.log('\n=== Token Tracking Endpoint Called ===');
+  const { token, ip_address, timestamp, user_agent, requestData } = req.body;
+  console.log('Received tracking data:', { token, ip_address, timestamp, user_agent });
+
   try {
-    const { token, ip_address, timestamp, user_agent, country, region, city, timezone, isp, request_body, metadata } = req.body;
-    console.log('Received tracking data:', { token, ip_address, timestamp });
+    // Get client metadata including location
+    const clientInfo = await getUserMetadata(ip_address, user_agent || '');
+    console.log('Client metadata:', clientInfo);
 
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        error: 'Token is required'
-      });
-    }
+    // Determine event type and status
+    const eventInfo = determineEventType(requestData);
 
-    // First check if token exists in tokens table
-    const { data: tokenData, error: tokenError } = await supabase
-      .from('tokens')
-      .select('id')
-      .eq('token', token)
-      .single();
-
-    if (tokenError || !tokenData) {
-      console.error('Token validation error:', tokenError || 'Token not found');
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid token',
-        details: 'The provided token does not exist in our records'
-      });
-    }
+    // Get browser and OS info from user agent
+    const ua = new UAParser(user_agent);
+    const browserInfo = ua.getBrowser();
+    const osInfo = ua.getOS();
+    const deviceInfo = ua.getDevice();
 
     // Insert tracking data into Supabase
-    console.log('Preparing log data...');
+    console.log('Inserting tracking data into token_logs...');
     const logData = {
-      token,
-      event: 'token_access',
-      status: 'success',
-      ip_address: ip_address || req.ip,
+      token: token,
+      event: eventInfo.event,
+      status: eventInfo.status,
+      ip_address: ip_address,
       user_agent: user_agent || '',
-      details: `Token accessed from ${city || 'unknown location'}`,
+      details: eventInfo.details,
       timestamp: timestamp || new Date().toISOString(),
-      country: country || 'Unknown',
-      region: region || 'Unknown',
-      city: city || 'Unknown',
-      timezone: timezone || 'UTC',
-      isp: isp || 'Unknown',
+      country: clientInfo.location.country || 'Unknown',
+      region: clientInfo.location.region || 'Unknown',
+      city: clientInfo.location.city || 'Unknown',
+      isp: clientInfo.location.isp || 'Unknown',
+      timezone: clientInfo.location.timezone || 'UTC',
+      browser: browserInfo.name || 'Unknown',
+      os: osInfo.name || 'Unknown',
+      device: deviceInfo.type || 'desktop',
       metadata: {
-        ...metadata,
-        tracked_at: new Date().toISOString(),
-        token_id: tokenData.id // Include the token's ID from tokens table
+        ip_type: clientInfo.ip_type,
+        request_method: requestData?.method,
+        request_path: requestData?.path,
+        browser_version: browserInfo.version,
+        os_version: osInfo.version,
+        location_accuracy: clientInfo.location.accuracy || 'low'
       },
-      request_body: request_body || {}
+      request_body: requestData || {}
     };
 
-    console.log('Inserting data into Supabase:', JSON.stringify(logData, null, 2));
-
+    console.log('Prepared log data:', logData);
     const { data, error } = await supabase
       .from('token_logs')
-      .insert([logData])
-      .select();
+      .insert([logData]);
 
     if (error) {
       console.error('Database insertion error:', error);
       return res.status(500).json({
         success: false,
         error: 'Failed to log token activity',
-        details: error.message,
-        hint: error.hint,
-        code: error.code
+        details: error.message
       });
     }
 
-    console.log('Successfully logged token activity:', data);
+    // Send notification for suspicious activities
+    if (eventInfo.status === 'suspicious') {
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #ff4444;">🚨 Suspicious Token Activity Detected</h2>
+          <div style="background: #fff3f3; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Token:</strong> ${token}</p>
+            <p><strong>Event:</strong> ${eventInfo.event}</p>
+            <p><strong>Location:</strong> ${logData.city}, ${logData.region}, ${logData.country}</p>
+            <p><strong>IP Address:</strong> ${ip_address}</p>
+            <p><strong>Time:</strong> ${new Date(logData.timestamp).toLocaleString()}</p>
+            <p><strong>Details:</strong> ${eventInfo.details}</p>
+          </div>
+        </div>
+      `;
+      await sendEmailNotification('🚨 Suspicious Token Activity Alert', emailContent);
+    }
+
+    console.log('Successfully logged token activity');
     return res.json({
       success: true,
       message: 'Token activity logged successfully',
-      data: data[0]
+      data: logData
     });
 
   } catch (error) {
@@ -1404,8 +1440,7 @@ app.post('/track-token', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'An error occurred while tracking token activity',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: error.message
     });
   }
 });
@@ -1576,20 +1611,9 @@ app.get('/utils/track/stats/:token', async (req, res) => {
   res.json(browserLeaks);
 });
 
-// Server Configuration
-const FRONTEND_URL_DEV = process.env.FRONTEND_URL_DEV || 'http://localhost:8000';
-
-// Verify Supabase connection before starting server
-verifySupabaseConnection().then(() => {
-  app.listen(PORT, () => {
-    console.log(`\n=== HoneyGuard Backend Server ===`);
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Frontend URL: ${FRONTEND_URL_DEV}`);
-  });
-}).catch(error => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 // Handle graceful shutdown

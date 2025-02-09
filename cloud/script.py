@@ -28,21 +28,6 @@ from user_agents import parse
 env_path = Path(__file__).parent / '.env'
 dotenv.load_dotenv(env_path)
 
-# Environment Configuration
-FLASK_ENV = os.getenv('FLASK_ENV', 'development')
-PORT = int(os.getenv('PORT', 8000))
-BACKEND_URL_DEV = os.getenv('BACKEND_URL_DEV', 'http://localhost:6000')
-BACKEND_URL_PROD = os.getenv('BACKEND_URL_PROD', 'https://honeyguard-backend.herokuapp.com')
-
-# Dynamic backend URL based on environment
-BACKEND_URL = BACKEND_URL_PROD if FLASK_ENV == 'production' else BACKEND_URL_DEV
-
-def get_backend_url():
-    """Get the appropriate backend URL based on environment"""
-    if FLASK_ENV == 'production':
-        return BACKEND_URL_PROD
-    return BACKEND_URL_DEV
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -697,68 +682,31 @@ def get_client_info():
             'longitude': 0
         }
 
+# Add retry logic for backend connection
 def send_to_backend(url, data, max_retries=3, retry_delay=1):
     """Send data to backend with retry logic"""
-    headers = {'Content-Type': 'application/json'}
-    
     for attempt in range(max_retries):
         try:
-            logger.debug(f'Attempt {attempt + 1}: Sending request to {url}')
-            logger.debug(f'Request data: {json.dumps(data, indent=2)}')
-            
-            response = requests.post(url, json=data, headers=headers, timeout=10)
-            
-            # Log response details for debugging
-            logger.debug(f'Response status: {response.status_code}')
-            logger.debug(f'Response headers: {dict(response.headers)}')
-            
-            try:
-                response_data = response.json()
-                logger.debug(f'Response data: {json.dumps(response_data, indent=2)}')
-                
-                # Check for specific error messages in the response
-                if not response_data.get('success', False):
-                    error_msg = response_data.get('error', 'Unknown error')
-                    details = response_data.get('details', '')
-                    hint = response_data.get('hint', '')
-                    code = response_data.get('code', '')
-                    
-                    full_error = f"Backend error: {error_msg}"
-                    if details:
-                        full_error += f"\nDetails: {details}"
-                    if hint:
-                        full_error += f"\nHint: {hint}"
-                    if code:
-                        full_error += f"\nCode: {code}"
-                        
-                    logger.error(full_error)
-                    response.raise_for_status()
-                    
-            except ValueError:
-                logger.debug(f'Raw response text: {response.text}')
-            
-            response.raise_for_status()
+            response = requests.post(
+                url,
+                json=data,
+                headers={'Content-Type': 'application/json'},
+                timeout=5  # Add timeout
+            )
             return response
-            
-        except requests.exceptions.RequestException as e:
-            if attempt == max_retries - 1:  # Last attempt
-                logger.error(f'Final attempt failed: {str(e)}')
-                if isinstance(e, requests.exceptions.HTTPError):
-                    try:
-                        error_data = e.response.json()
-                        error_msg = error_data.get('error', str(e))
-                        details = error_data.get('details', '')
-                        if details:
-                            error_msg += f": {details}"
-                    except:
-                        error_msg = f"HTTP Error: {str(e)}"
-                    logger.error(f'Response error: {error_msg}')
-                    logger.error(f'Response text: {e.response.text}')
+        except requests.exceptions.ConnectionError as e:
+            if attempt == max_retries - 1:
+                logger.error(f'Failed to connect to backend after {max_retries} attempts: {str(e)}')
                 raise
-            
-            logger.warning(f'Attempt {attempt + 1} failed: {str(e)}. Retrying in {retry_delay} seconds...')
+            logger.warning(f'Connection attempt {attempt + 1} failed, retrying in {retry_delay} seconds...')
             time.sleep(retry_delay)
             retry_delay *= 2  # Exponential backoff
+        except Exception as e:
+            logger.error(f'Unexpected error connecting to backend: {str(e)}')
+            raise
+
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:5000')
+logger.info(f'Using backend URL: {BACKEND_URL}')
 
 @app.route('/')
 def home():
@@ -825,88 +773,70 @@ def monitor_token():
         # Get client information
         client_info = get_client_info()
         
-        # Get current backend URL
-        backend_url = get_backend_url()
-        logger.info(f'Using backend URL: {backend_url}')
-        
-        # Format request data
+        # Format request data to match token_logs schema
         tracking_data = {
             'token': token,
-            'ip_address': client_info.get('ip', request.remote_addr),
+            'ip_address': client_info['ip'],
             'timestamp': datetime.now().isoformat(),
             'user_agent': request.headers.get('User-Agent', ''),
-            'country': client_info.get('country', 'Unknown'),
-            'region': client_info.get('region', 'Unknown'),
-            'city': client_info.get('city', 'Unknown'),
-            'timezone': client_info.get('timezone', 'UTC'),
-            'isp': client_info.get('isp', 'Unknown'),
+            'country': client_info['country'],
+            'region': client_info['region'],
+            'city': client_info['city'],
+            'timezone': client_info['timezone'],
+            'isp': client_info['isp'],
             'request_body': {
                 'method': request.method,
                 'path': request.path,
+                'headers': dict(request.headers),
                 'body': data
             },
             'metadata': {
-                'country_code': client_info.get('country_code'),
-                'latitude': client_info.get('latitude'),
-                'longitude': client_info.get('longitude'),
-                'environment': FLASK_ENV,
-                'browser': request.user_agent.browser,
-                'os': request.user_agent.platform,
-                'device': 'mobile' if request.user_agent.platform in ['android', 'iphone'] else 'desktop'
+                'country_code': client_info['country_code'],
+                'latitude': client_info['latitude'],
+                'longitude': client_info['longitude'],
+                'request_method': request.method,
+                'request_path': request.path
             }
         }
         
         try:
-            logger.info(f'Sending request to backend: {backend_url}/track-token')
-            logger.debug(f'Tracking data: {json.dumps(tracking_data, indent=2)}')
+            logger.info(f'Sending request to backend: {BACKEND_URL}/track-token')
+            logger.debug(f'Tracking data: {tracking_data}')
+            response = send_to_backend(f'{BACKEND_URL}/track-token', tracking_data)
             
-            response = requests.post(
-                f'{backend_url}/track-token',
-                json=tracking_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=10
-            )
-            
-            logger.debug(f'Response status: {response.status_code}')
-            logger.debug(f'Response headers: {dict(response.headers)}')
-            
-            try:
-                response_data = response.json()
-                logger.debug(f'Response data: {json.dumps(response_data, indent=2)}')
-                
-                if response.status_code == 200 and response_data.get('success'):
-                    return jsonify({
-                        'success': True,
-                        'message': response_data.get('message', 'Token activity logged successfully'),
-                        'data': response_data.get('data', {})
-                    })
-                else:
-                    error_msg = response_data.get('error', f'Backend error: {response.status_code}')
-                    details = response_data.get('details', '')
-                    if details:
-                        error_msg += f": {details}"
-                    logger.error(error_msg)
-                    return jsonify({'success': False, 'error': error_msg}), response.status_code
-                    
-            except ValueError:
-                error_msg = f'Invalid JSON response from backend: {response.text}'
+            if response.status_code == 200:
+                logger.info(f'Successfully logged token activity for token: {token}')
+                return jsonify({
+                    'success': True, 
+                    'message': 'Token activity logged successfully',
+                    'data': response.json().get('data', {})
+                })
+            else:
+                error_msg = f'Backend returned status code: {response.status_code}'
+                if response.headers.get('content-type') == 'application/json':
+                    error_details = response.json()
+                    error_msg = error_details.get('error', error_msg)
+                    if error_details.get('details'):
+                        error_msg += f" - {error_details['details']}"
                 logger.error(error_msg)
-                return jsonify({'success': False, 'error': error_msg}), 500
+                return jsonify({'success': False, 'error': error_msg}), response.status_code
                 
         except requests.exceptions.ConnectionError:
-            error_msg = f'Unable to connect to backend server at {backend_url}. Please ensure the backend service is running on port 6000.'
+            error_msg = f'Unable to connect to backend server at {BACKEND_URL}. Please ensure the backend service is running.'
             logger.error(error_msg)
             return jsonify({'success': False, 'error': error_msg}), 503
             
-        except Exception as e:
-            error_msg = f'Error communicating with backend: {str(e)}'
-            logger.error(error_msg, exc_info=True)
-            return jsonify({'success': False, 'error': error_msg}), 500
-            
     except Exception as e:
         error_msg = f'Error monitoring token: {str(e)}'
-        logger.error(error_msg, exc_info=True)
+        logger.error(error_msg)
         return jsonify({'success': False, 'error': error_msg}), 500
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=PORT, debug=FLASK_ENV == 'development')
+    try:
+        # Enable debug mode for better error messages
+        app.debug = True
+        logger.info("Starting HoneyGuard S3 Monitor Web App...")
+        app.run(host='0.0.0.0', port=int(os.getenv('PORT', 9000)))
+    except Exception as e:
+        logger.error(f"Application error: {str(e)}")
+        sys.exit(1)
