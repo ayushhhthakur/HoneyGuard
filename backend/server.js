@@ -11,6 +11,7 @@ import { UAParser } from 'ua-parser-js';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import nodemailer from 'nodemailer';
+import { spawn } from 'child_process';
 
 dotenv.config();
 
@@ -178,12 +179,32 @@ const getClientIp = (req) => {
   return req.ip;
 };
 
+// Start Python S3 Monitor
+const startS3Monitor = () => {
+  console.log('Starting S3 Security Monitor...');
+  const pythonProcess = spawn('python', ['../s3_security_monitor.py'], {
+    stdio: 'inherit',
+    shell: true
+  });
+
+  pythonProcess.on('error', (err) => {
+    console.error('Failed to start S3 Monitor:', err);
+  });
+
+  process.on('exit', () => {
+    pythonProcess.kill();
+  });
+};
+
 // Test Supabase connection on startup
 const testSupabaseConnection = async () => {
   try {
     const { data, error } = await supabase.from('tokens').select('count').limit(1);
     if (error) throw error;
     console.log('Successfully connected to Supabase');
+    
+    // Start S3 Monitor after successful database connection
+    startS3Monitor();
   } catch (error) {
     console.error('Error connecting to Supabase:', error);
   }
