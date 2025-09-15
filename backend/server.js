@@ -1,7 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { createClient } from '@supabase/supabase-js';
+import mongoose from 'mongoose';
+import Token from './models/Token.js';
+import TokenLog from './models/TokenLog.js';
+import Category from './models/Category.js';
+import Alert from './models/Alert.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -22,7 +26,7 @@ const PORT = process.env.PORT || 6000;
 // Basic CORS setup
 app.use(cors(
   {
-    origin: ['http://localhost:3000', 'http://localhost:5000', 'https://honeyguard.vercel.app'],
+    origin: ['http://localhost:3000', 'http://localhost:5000', 'https://honeyguard.vercel.app', "http://192.168.56.1:3000"],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }
@@ -45,22 +49,16 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use(limiter);
 
-// Supabase setup with service role key for admin access
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing required environment variables for Supabase');
+// MongoDB connection
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/honeyguard';
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch((err) => {
+  console.error('MongoDB connection error:', err);
   process.exit(1);
-}
-
-console.log('Initializing Supabase with URL:', supabaseUrl);
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
 });
 
 // Configure Express to trust Render's proxy
@@ -131,32 +129,25 @@ const getUserMetadata = async (requestIp, userAgent) => {
 const logTokenActivity = async (tokenId, event, status, requestIp, userAgent, metadata) => {
   try {
     const metadataObj = await getUserMetadata(requestIp, userAgent);
-
-    const { data, error } = await supabase
-      .from('token_logs')
-      .insert([{
-        token: tokenId,
-        event,
-        status,
-        ip_address: metadataObj.ip,
-        user_agent: userAgent,
-        os: metadataObj.device.os,
-        browser: metadataObj.device.browser,
-        device: metadataObj.device.device,
-        country: metadataObj.location.country,
-        region: metadataObj.location.region,
-        city: metadataObj.location.city,
-        timezone: metadataObj.location.timezone,
-        isp: metadataObj.location.isp,
-        timestamp: new Date().toISOString(),
-        metadata: metadata
-      }]);
-
-    if (error) {
-      console.error('Error logging activity:', error);
-      throw error;
-    }
-    return data;
+    const log = new TokenLog({
+      token: tokenId,
+      event,
+      status,
+      ip_address: metadataObj.ip,
+      user_agent: userAgent,
+      os: metadataObj.device.os,
+      browser: metadataObj.device.browser,
+      device: metadataObj.device.device,
+      country: metadataObj.location.country,
+      region: metadataObj.location.region,
+      city: metadataObj.location.city,
+      timezone: metadataObj.location.timezone,
+      isp: metadataObj.location.isp,
+      timestamp: new Date(),
+      metadata: metadata
+    });
+    await log.save();
+    return log;
   } catch (error) {
     console.error('Failed to log token activity:', error);
   }
@@ -197,29 +188,6 @@ const startS3Monitor = () => {
   });
 };
 
-// Test Supabase connection on startup
-async function testSupabaseConnection() {
-  try {
-    const { data, error } = await supabase
-      .from('tokens')
-      .select('count(*)', { count: 'exact' });
-
-    if (error) throw error;
-    
-    console.log('Successfully connected to Supabase');
-    return true;
-  } catch (error) {
-    console.error('Error connecting to Supabase:', {
-      message: error.message,
-      details: error.stack,
-      hint: error.hint || '',
-      code: error.code || ''
-    });
-    return false;
-  }
-}
-
-testSupabaseConnection();
 
 // Helper functions for token generation
 const generateAwsToken = (region, service) => {
@@ -269,9 +237,9 @@ const upload = multer({
 // Email configuration
 const adminEmails = [
   '2021A1R049@mietjammu.in',
-  '2021a1r137@mietjammu.in',
-  '2021a1r094@mietjammu.in',
-  '2022a1r133@mietjammu.in'
+  // '2021a1r137@mietjammu.in',
+  // '2021a1r094@mietjammu.in',
+  // '2022a1r133@mietjammu.in'
 ];
 
 // Create reusable transporter object using SMTP transport
@@ -457,11 +425,11 @@ app.post('/generate-token', upload.single('file'), async (req, res) => {
     const { tokenName, description, category } = req.body;
     const clientIp = getClientIp(req);
     let generatedToken;
-    let imageurl = null
-    let imagepath = null
-    let filename = null
-    let mimetype = null
-    let size = null
+    let imageurl = null;
+    let imagepath = null;
+    let filename = null;
+    let mimetype = null;
+    let size = null;
 
     // Validate required fields
     if (!tokenName || !category) {
@@ -480,43 +448,22 @@ app.post('/generate-token', upload.single('file'), async (req, res) => {
             message: 'Image file is required for Image category' 
           })
         }
-
-        // Upload image to Supabase storage
-        const fileBuffer = req.file.buffer
-        filename = `${Date.now()}_${req.file.originalname}`
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(filename, fileBuffer, {
-            contentType: req.file.mimetype,
-          })
-
-        if (uploadError) {
-          throw new Error(uploadError.message)
-        }
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('media')
-          .getPublicUrl(filename)
-
-        imageurl = urlData.publicUrl
-        imagepath = uploadData.path
-        mimetype = req.file.mimetype
-        size = req.file.size.toString()
-        generatedToken = `img_${Math.random().toString(36).substring(2, 15)}`
-        break
-
+        // TODO: Replace with S3/local storage logic. For now, just store filename and mimetype.
+        filename = `${Date.now()}_${req.file.originalname}`;
+        mimetype = req.file.mimetype;
+        size = req.file.size.toString();
+        generatedToken = `img_${Math.random().toString(36).substring(2, 15)}`;
+        break;
       case 'aws':
-        const { awsRegion, awsService } = req.body
+        const { awsRegion, awsService } = req.body;
         if (!awsRegion || !awsService) {
           return res.status(400).json({ 
             success: false, 
             message: 'AWS region and service are required' 
           })
         }
-        generatedToken = generateAwsToken(awsRegion, awsService)
-        break
-
+        generatedToken = generateAwsToken(awsRegion, awsService);
+        break;
       case 'financial':
         const { financialType } = req.body
         if (!financialType) {
@@ -547,42 +494,33 @@ app.post('/generate-token', upload.single('file'), async (req, res) => {
     }
 
     // Save token to database
-    const { data: token, error: dbError } = await supabase
-      .from('tokens')
-      .insert([
-        {
-          tokenName,
-          description,
-          category,
-          token: generatedToken,
-          imageurl,
-          imagepath,
-          filename,
-          mimetype,
-          size,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          metadata: {
-            ...(category.toLowerCase() === 'aws' && {
-              region: req.body.awsRegion,
-              service: req.body.awsService
-            }),
-            ...(category.toLowerCase() === 'financial' && {
-              type: req.body.financialType
-            }),
-            ...(category.toLowerCase() === 'healthcare' && {
-              system: req.body.healthcareSystem,
-              patientIdFormat: req.body.patientId
-            })
-          }
-        }
-      ])
-      .select()
-      .single()
-
-    if (dbError) {
-      throw new Error(dbError.message)
-    }
+    const tokenDoc = new Token({
+      tokenName,
+      description,
+      category,
+      token: generatedToken,
+      imageurl,
+      imagepath,
+      filename,
+      mimetype,
+      size,
+      is_active: true,
+      created_at: new Date(),
+      metadata: {
+        ...(category.toLowerCase() === 'aws' && {
+          region: req.body.awsRegion,
+          service: req.body.awsService
+        }),
+        ...(category.toLowerCase() === 'financial' && {
+          type: req.body.financialType
+        }),
+        ...(category.toLowerCase() === 'healthcare' && {
+          system: req.body.healthcareSystem,
+          patientIdFormat: req.body.patientId
+        })
+      }
+    });
+    await tokenDoc.save();
 
     // Log token creation
     await logTokenActivity(
@@ -693,12 +631,8 @@ app.post('/track/:token', async (req, res) => {
 // get categories
 app.get('/categories', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('category')
-      .select('*');
-
-    if (error) throw error;
-    res.json({ success: true, data });
+    const categories = await Category.find();
+    res.json({ success: true, data: categories });
   } catch (error) {
     console.error('Error fetching categories:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -709,21 +643,12 @@ app.get('/categories', async (req, res) => {
 app.post('/categories', async (req, res) => {
   try {
     const { category } = req.body;
-
     if (!category) {
       return res.status(400).json({ success: false, error: "Category is required" });
     }
-
-    // Insert into the category table
-    const { data, error } = await supabase
-      .from('category')
-      .insert([{ category }])
-      .select(); // Make sure to select the inserted data
-
-    if (error) throw error;
-
-    // Return the inserted data
-    res.json({ success: true, data });
+    const newCategory = new Category({ category });
+    await newCategory.save();
+    res.json({ success: true, data: newCategory });
   } catch (error) {
     console.error('Error adding category:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -733,14 +658,8 @@ app.post('/categories', async (req, res) => {
 // Get all tokens
 app.get('/tokens', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('tokens')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    res.json({ success: true, data });
+    const tokens = await Token.find().sort({ created_at: -1 });
+    res.json({ success: true, data: tokens });
   } catch (error) {
     console.error('Error fetching tokens:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -751,13 +670,7 @@ app.get('/tokens', async (req, res) => {
 app.get('/tokens/id/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const { data: tokenData, error } = await supabase
-      .from('tokens')
-      .select('*')
-      .eq('token', token)
-      .single();
-
-    if (error) throw error;
+    const tokenData = await Token.findOne({ token });
     if (!tokenData) {
       return res.status(404).json({ success: false, error: 'Token not found' });
     }
@@ -772,29 +685,14 @@ app.get('/tokens/id/:token', async (req, res) => {
 app.get('/tokens/:token/logs', async (req, res) => {
   const { token } = req.params;
   console.log(`Fetching logs for token: ${token}`);
-
   try {
-    // Check if the token parameter is provided
     if (!token) {
       return res.status(400).json({
         success: false,
         error: 'Token parameter is required',
       });
     }
-
-    // Fetch logs from the token_logs table using Supabase client
-    const { data: logs, error } = await supabase
-      .from('token_logs')  // Specify the table name
-      .select('*')          // Select all columns
-      .eq('token', token)   // Filter by the token
-      .order('timestamp', { ascending: false }); // Order by timestamp in descending order
-
-    // If there's an error during the query, throw it
-    if (error) {
-      throw error;
-    }
-
-    // Respond with the logs or an empty array if no logs are found
+    const logs = await TokenLog.find({ token }).sort({ timestamp: -1 });
     return res.json({
       success: true,
       data: logs || [],

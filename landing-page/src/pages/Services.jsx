@@ -87,21 +87,21 @@ function Services() {
   ];
 
   return (
-    <div className="min-h-screen py-20 bg-gradient-to-b from-[#020c1b] to-[#0a192f]">
+    <div className="min-h-screen py-20 bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-20">
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-5xl font-bold mb-6 text-gradient"
+          className="text-5xl md:text-6xl font-bold mb-6 text-gradient"
         >
           Our Services
         </motion.h1>
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-xl text-gray-400 max-w-2xl mx-auto"
+          className="text-xl text-slate-600 max-w-2xl mx-auto"
         >
           Comprehensive honeytoken generation and threat detection services to protect your infrastructure
         </motion.p>
@@ -117,29 +117,28 @@ function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="group relative p-8 bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 hover:border-[#00ff9d]/50 transition-all duration-300"
+              className="card-modern group hover:shadow-2xl hover:shadow-emerald-500/10"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-[#00ff9d]/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#00ff9d]/20 to-[#64ffda]/20 rounded-xl flex items-center justify-center mb-6">
-                  <FontAwesomeIcon icon={service.icon} className="text-2xl text-[#00ff9d]" />
+              <div className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <FontAwesomeIcon icon={service.icon} className="text-2xl text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4 text-white group-hover:text-[#00ff9d] transition-colors">
+                <h3 className="text-2xl font-semibold mb-4 text-slate-900 group-hover:text-emerald-600 transition-colors">
                   {service.title}
                 </h3>
-                <p className="text-gray-400 mb-6">
+                <p className="text-slate-600 mb-6 leading-relaxed">
                   {service.description}
                 </p>
                 <ul className="space-y-3">
                   {service.features.map((feature, fIndex) => (
-                    <motion.li 
+                    <motion.li
                       key={fIndex}
                       initial={{ opacity: 0, x: -10 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 + fIndex * 0.1 }}
-                      className="flex items-center space-x-3 text-gray-300"
+                      className="flex items-center space-x-3 text-slate-700"
                     >
-                      <span className="w-1.5 h-1.5 bg-[#00ff9d] rounded-full"></span>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0"></div>
                       <span>{feature}</span>
                     </motion.li>
                   ))}
@@ -152,10 +151,10 @@ function Services() {
 
       {/* Integration Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          className="text-3xl md:text-4xl font-bold text-center mb-12 text-gradient"
+          className="text-4xl md:text-5xl font-bold text-center mb-12 text-gradient"
         >
           Seamless Integration
         </motion.h2>
@@ -182,16 +181,16 @@ function Services() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="p-6 bg-white/5 backdrop-blur-lg rounded-xl border border-white/10"
+              className="card-modern p-6 text-center"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00ff9d]/20 to-[#64ffda]/20 rounded-lg flex items-center justify-center mb-4">
-                <FontAwesomeIcon icon={platform.icon} className="text-xl text-[#00ff9d]" />
+              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <FontAwesomeIcon icon={platform.icon} className="text-2xl text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-4">{platform.title}</h3>
-              <ul className="space-y-2">
+              <h3 className="text-xl font-semibold text-slate-900 mb-4">{platform.title}</h3>
+              <ul className="space-y-3">
                 {platform.items.map((item, iIndex) => (
-                  <li key={iIndex} className="text-gray-400 flex items-center space-x-2">
-                    <span className="w-1 h-1 bg-[#00ff9d] rounded-full"></span>
+                  <li key={iIndex} className="text-slate-600 flex items-center justify-center space-x-2">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -206,26 +205,26 @@ function Services() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          className="p-12 bg-gradient-to-r from-[#00ff9d]/10 to-transparent backdrop-blur-lg rounded-3xl border border-[#00ff9d]/20 text-center"
+          className="glass-effect p-12 rounded-3xl border-emerald-200/50 text-center bg-gradient-to-r from-emerald-50/30 to-teal-50/30"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gradient">
             Ready to Deploy HoneyGuard?
           </h2>
-          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
             Get started with our advanced honeytoken generation and threat detection services
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-[#00ff9d] to-[#64ffda] text-[#0a192f] px-8 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-[#00ff9d]/20 transition-all duration-300"
+              className="btn-primary px-8 py-4 text-lg"
             >
               Schedule Demo
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="border border-[#00ff9d] text-[#00ff9d] px-8 py-3 rounded-lg font-medium hover:bg-[#00ff9d]/10 transition-all duration-300"
+              className="btn-ghost px-8 py-4 text-lg"
             >
               Contact Sales
             </motion.button>

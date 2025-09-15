@@ -11,7 +11,6 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
-
 import Contact from './pages/Contact';
 
 function App() {
@@ -41,43 +40,45 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-b from-[#020c1b] to-[#0a192f] text-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
         <nav
-          className={`fixed w-full z-50 transition-all duration-300 ${
+          className={`fixed w-full z-50 transition-all duration-500 ${
             scrolled
-              ? 'bg-[#0a192f]/90 backdrop-blur-md shadow-lg shadow-[#00ff9d]/5'
-              : 'bg-transparent'
+              ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-slate-900/5 border-b border-slate-200/50'
+              : 'bg-white/90 backdrop-blur-xl'
           }`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20">
-              <Link
-                to="/"
-                className="flex items-center space-x-3 text-[#00ff9d] hover:text-[#64ffda] transition-all duration-300 transform hover:scale-105"
+              <a
+                href="/"
+                className="flex items-center space-x-3 text-emerald-600 hover:text-emerald-700 transition-all duration-300 transform hover:scale-105"
               >
                 <FontAwesomeIcon icon={faShieldHalved} className="text-3xl" />
                 <span className="font-extrabold text-2xl tracking-tight">HoneyGuard</span>
-              </Link>
+              </a>
 
               {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center space-x-10">
+              <div className="hidden md:flex items-center space-x-8">
                 {navItems.map((item) => (
-                  <Link
+                  <a
                     key={item.text}
-                    to={item.path}
-                    className="text-gray-300 hover:text-[#00ff9d] transition-all duration-300 relative group text-sm font-medium"
+                    href={item.path}
+                    className="text-slate-600 hover:text-emerald-600 transition-all duration-300 relative group text-sm font-medium"
                   >
                     {item.text}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#00ff9d] transition-all duration-300 group-hover:w-full"></span>
-                  </Link>
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-600 transition-all duration-300 group-hover:w-full"></span>
+                  </a>
                 ))}
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-[#00ff9d] to-[#64ffda] text-[#0a192f] px-6 py-2.5 rounded-lg font-semibold flex items-center space-x-2 hover:shadow-lg hover:shadow-[#00ff9d]/20 transition-all duration-300 text-sm cursor-pointer"
+                  className="btn-primary text-sm px-5 py-2.5"
                 >
-                  <FontAwesomeIcon icon={faShieldHalved} className="text-lg" />
+                  <a href="https://honeyguard.vercel.app/">
+                  <FontAwesomeIcon icon={faShieldHalved} className="text-lg mr-2" />
                   <span>Try Demo</span>
+                  </a>
                 </motion.button>
               </div>
 
@@ -85,7 +86,7 @@ function App() {
               <div className="md:hidden">
                 <button
                   onClick={() => setIsOpen(!isOpen)}
-                  className="text-gray-300 hover:text-[#00ff9d] p-2 transition-colors duration-300"
+                  className="text-slate-600 hover:text-emerald-600 p-2 transition-colors duration-300 rounded-lg hover:bg-slate-100"
                   aria-label="Toggle menu"
                 >
                   <motion.div
@@ -105,17 +106,17 @@ function App() {
           <AnimatePresence>
             {isOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="md:hidden bg-[#0a192f]/95 backdrop-blur-lg"
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                className="md:hidden bg-white/95 backdrop-blur-xl border-t border-slate-200/50 shadow-xl"
               >
-                <div className="px-4 pt-2 pb-6 space-y-4">
+                <div className="px-4 pt-4 pb-6 space-y-4">
                   {navItems.map((item) => (
                     <Link
                       key={item.text}
                       to={item.path}
-                      className="block py-3 text-gray-300 hover:text-[#00ff9d] transition-colors duration-300 text-sm font-medium"
+                      className="block py-3 text-slate-600 hover:text-emerald-600 transition-colors duration-300 text-sm font-medium rounded-lg hover:bg-slate-50 px-3"
                       onClick={() => setIsOpen(false)}
                     >
                       {item.text}
@@ -123,10 +124,12 @@ function App() {
                   ))}
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    className="w-full bg-gradient-to-r from-[#00ff9d] to-[#64ffda] text-[#0a192f] px-4 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:shadow-lg hover:shadow-[#00ff9d]/20 transition-all duration-300 text-sm"
+                    className="w-full btn-primary text-sm py-3 mt-4"
                   >
-                    <FontAwesomeIcon icon={faShieldHalved} className="text-lg" />
+                  <a href="https://honeyguard.vercel.app/">
+                    <FontAwesomeIcon icon={faShieldHalved} className="text-lg mr-2" />
                     <span>Try Demo</span>
+                    </a>
                   </motion.button>
                 </div>
               </motion.div>
@@ -144,23 +147,34 @@ function App() {
           </Routes>
         </main>
 
-        <footer className="bg-[#0a192f] mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <footer className="bg-slate-50 border-t border-slate-200 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
               <div>
-                <h3 className="text-[#00ff9d] font-semibold text-lg mb-4">
+                <h3 className="text-emerald-600 font-semibold text-lg mb-4">
                   HoneyGuard
                 </h3>
-                <p className="text-gray-400">Securing the future of Web3</p>
+                <p className="text-slate-600">Securing the future of Web3 with intelligent honeytoken technology.</p>
+                <div className="flex space-x-4 mt-6">
+                  <a href="#" className="text-slate-400 hover:text-emerald-600 transition-colors">
+                    <FontAwesomeIcon icon={faShieldHalved} className="text-xl" />
+                  </a>
+                  <a href="#" className="text-slate-400 hover:text-emerald-600 transition-colors">
+                    <FontAwesomeIcon icon={faShieldHalved} className="text-xl" />
+                  </a>
+                  <a href="#" className="text-slate-400 hover:text-emerald-600 transition-colors">
+                    <FontAwesomeIcon icon={faShieldHalved} className="text-xl" />
+                  </a>
+                </div>
               </div>
               <div>
-                <h4 className="text-white font-semibold mb-4">Quick Links</h4>
+                <h4 className="text-slate-900 font-semibold mb-4">Quick Links</h4>
                 <div className="flex flex-col space-y-2">
                   {navItems.slice(0, 3).map((item) => (
                     <Link
                       key={item.text}
                       to={item.path}
-                      className="text-gray-400 hover:text-[#00ff9d] transition-colors"
+                      className="text-slate-600 hover:text-emerald-600 transition-colors"
                     >
                       {item.text}
                     </Link>
@@ -168,29 +182,43 @@ function App() {
                 </div>
               </div>
               <div>
-                <h4 className="text-white font-semibold mb-4">Resources</h4>
+                <h4 className="text-slate-900 font-semibold mb-4">Resources</h4>
                 <div className="flex flex-col space-y-2">
                   <a
                     href="#"
-                    className="text-gray-400 hover:text-[#00ff9d] transition-colors"
+                    className="text-slate-600 hover:text-emerald-600 transition-colors"
+                  >
+                    Documentation
+                  </a>
+                  <a
+                    href="#"
+                    className="text-slate-600 hover:text-emerald-600 transition-colors"
+                  >
+                    API Reference
+                  </a>
+                  <a
+                    href="#"
+                    className="text-slate-600 hover:text-emerald-600 transition-colors"
                   >
                     Blog
                   </a>
                   <a
                     href="#"
-                    className="text-gray-400 hover:text-[#00ff9d] transition-colors"
+                    className="text-slate-600 hover:text-emerald-600 transition-colors"
                   >
                     Support
                   </a>
                 </div>
               </div>
               <div>
-                <h4 className="text-white font-semibold mb-4">Contact</h4>
-                <p className="text-gray-400">contact.ideatex@gmail.com</p>
+                <h4 className="text-slate-900 font-semibold mb-4">Contact</h4>
+                <p className="text-slate-600 mb-2">contact.ideatex@gmail.com</p>
+                <p className="text-slate-600">+91 8715808090</p>
+                <p className="text-slate-600">Jammu, India</p>
               </div>
             </div>
-            <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-              &copy; {new Date().getFullYear()} HoneyGuard. All rights reserved.
+            <div className="mt-12 pt-8 border-t border-slate-200 text-center text-slate-500">
+              <p>&copy; {new Date().getFullYear()} HoneyGuard. All rights reserved.</p>
             </div>
           </div>
         </footer>

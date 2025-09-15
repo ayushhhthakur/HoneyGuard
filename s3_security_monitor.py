@@ -81,17 +81,17 @@ class HoneyGuardS3Monitor:
         
         # Team roles and recipients
         self.email_recipients = [
-            '2021a1r137@mietjammu.in',
-            '2021a1ro94@mietjammu.in',
-            '2021a1r022@mietjammu.in',
-            '2021a1r033@mietjammu.in',
+            # '2021a1r137@mietjammu.in',
+            # '2021a1ro94@mietjammu.in',
+            # '2021a1r022@mietjammu.in',
+            # '2021a1r033@mietjammu.in',
             '2021a1r049@mietjammu.in'
         ]
         self.team_roles = {
-            '2021a1r137@mietjammu.in': 'Security Lead',
-            '2021a1ro94@mietjammu.in': 'System Architect',
-            '2021a1r022@mietjammu.in': 'DevOps Engineer',
-            '2021a1r033@mietjammu.in': 'Security Analyst',
+            # '2021a1r137@mietjammu.in': 'Security Lead',
+            # '2021a1ro94@mietjammu.in': 'System Architect',
+            # '2021a1r022@mietjammu.in': 'DevOps Engineer',
+            # '2021a1r033@mietjammu.in': 'Security Analyst',
             '2021a1r049@mietjammu.in': 'Infrastructure Engineer'
         }
         

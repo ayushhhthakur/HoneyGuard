@@ -14,7 +14,7 @@ function Pricing() {
     {
       icon: faShieldAlt,
       name: "Starter",
-      price: "5",
+      price: "499",
       description: "Perfect for small projects and startups",
       features: [
         "5 Dynamic Honeytokens",
@@ -28,7 +28,7 @@ function Pricing() {
     {
       icon: faRocket,
       name: "Professional",
-      price: "10",
+      price: "999",
       description: "Ideal for growing projects and businesses",
       features: [
         "20 Dynamic Honeytokens",
@@ -60,23 +60,23 @@ function Pricing() {
   ];
 
   return (
-    <div className="min-h-screen py-20 bg-gradient-to-b from-[#020c1b] to-[#0a192f]">
+    <div className="min-h-screen py-20 bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-20">
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-5xl font-bold mb-6 text-gradient"
+          className="text-5xl md:text-6xl font-bold mb-6 text-gradient"
         >
           Simple, Transparent Pricing
         </motion.h1>
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-xl text-gray-400 max-w-2xl mx-auto"
+          className="text-xl text-slate-600 max-w-2xl mx-auto"
         >
-          Choose the perfect plan for your security needs
+          Choose the perfect plan for your security needs. All plans include our core features.
         </motion.p>
       </section>
 
@@ -90,46 +90,46 @@ function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className={`relative p-8 bg-white/5 backdrop-blur-lg rounded-2xl border ${
-                plan.name === 'Professional' 
-                  ? 'border-[#00ff9d] shadow-lg shadow-[#00ff9d]/10' 
-                  : 'border-white/10 hover:border-[#00ff9d]/50'
-              } transition-all duration-300`}
+              className={`card-modern relative ${
+                plan.name === 'Professional'
+                  ? 'border-emerald-300 shadow-2xl shadow-emerald-500/20 scale-105'
+                  : 'hover:shadow-xl hover:shadow-slate-500/10'
+              }`}
             >
               {plan.name === 'Professional' && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-[#00ff9d] to-[#64ffda] text-[#0a192f] px-4 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
                     Most Popular
                   </span>
                 </div>
               )}
-              <div className="relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#00ff9d]/20 to-[#64ffda]/20 rounded-xl flex items-center justify-center mb-6">
-                  <FontAwesomeIcon icon={plan.icon} className="text-2xl text-[#00ff9d]" />
+              <div className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6">
+                  <FontAwesomeIcon icon={plan.icon} className="text-2xl text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">{plan.name}</h3>
+                <h3 className="text-2xl font-bold text-slate-900 mb-4">{plan.name}</h3>
                 <div className="mb-6">
                   {plan.price === 'Custom' ? (
-                    <span className="text-3xl font-bold text-white">Contact Us</span>
+                    <div className="text-3xl font-bold text-slate-900">Contact Us</div>
                   ) : (
                     <div className="flex items-baseline">
-                      <span className="text-gray-400 text-xl">$</span>
-                      <span className="text-4xl font-bold text-white mx-1">{plan.price}</span>
-                      <span className="text-gray-400">/month</span>
+                      <span className="text-slate-500 text-xl">$</span>
+                      <span className="text-4xl font-bold text-slate-900 mx-1">{plan.price}</span>
+                      <span className="text-slate-500">/month</span>
                     </div>
                   )}
                 </div>
-                <p className="text-gray-400 mb-8">{plan.description}</p>
+                <p className="text-slate-600 mb-8 leading-relaxed">{plan.description}</p>
                 <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, fIndex) => (
-                    <motion.li 
+                    <motion.li
                       key={fIndex}
                       initial={{ opacity: 0, x: -10 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 + fIndex * 0.1 }}
-                      className="flex items-center space-x-3 text-gray-300"
+                      className="flex items-center space-x-3 text-slate-700"
                     >
-                      <FontAwesomeIcon icon={faCheck} className="text-[#00ff9d] text-sm" />
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0"></div>
                       <span>{feature}</span>
                     </motion.li>
                   ))}
@@ -137,14 +137,13 @@ function Pricing() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 transition-all duration-300 ${
+                  className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300 ${
                     plan.name === 'Professional'
-                      ? 'bg-gradient-to-r from-[#00ff9d] to-[#64ffda] text-[#0a192f] hover:shadow-lg hover:shadow-[#00ff9d]/20'
-                      : 'border border-[#00ff9d] text-[#00ff9d] hover:bg-[#00ff9d]/10'
+                      ? 'btn-primary'
+                      : 'btn-secondary'
                   }`}
                 >
-                  <span>{plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}</span>
-                  <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
+                  {plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
                 </motion.button>
               </div>
             </motion.div>
@@ -154,10 +153,10 @@ function Pricing() {
 
       {/* FAQ Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          className="text-3xl font-bold text-center mb-12 text-white"
+          className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900"
         >
           Frequently Asked Questions
         </motion.h2>
@@ -185,10 +184,10 @@ function Pricing() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="p-6 bg-white/5 backdrop-blur-lg rounded-xl border border-white/10"
+              className="card-modern p-6"
             >
-              <h3 className="text-lg font-semibold text-white mb-3">{faq.question}</h3>
-              <p className="text-gray-400">{faq.answer}</p>
+              <h3 className="text-lg font-semibold text-slate-900 mb-3">{faq.question}</h3>
+              <p className="text-slate-600">{faq.answer}</p>
             </motion.div>
           ))}
         </div>
@@ -199,18 +198,18 @@ function Pricing() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          className="p-12 bg-gradient-to-r from-[#00ff9d]/10 to-transparent backdrop-blur-lg rounded-3xl border border-[#00ff9d]/20 text-center"
+          className="glass-effect p-12 rounded-3xl border-emerald-200/50 text-center bg-gradient-to-r from-emerald-50/30 to-teal-50/30"
         >
-          <h2 className="text-3xl font-bold mb-6 text-gradient">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gradient">
             Need a Custom Solution?
           </h2>
-          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
             Contact our sales team to create a custom plan that fits your security requirements
           </p>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-[#00ff9d] to-[#64ffda] text-[#0a192f] px-8 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-[#00ff9d]/20 transition-all duration-300"
+            className="btn-primary px-8 py-4 text-lg"
           >
             Contact Sales
           </motion.button>

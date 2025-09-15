@@ -12,28 +12,28 @@
   }
 
   body {
-    @apply bg-[#020c1b] text-white;
+    @apply bg-slate-50 text-slate-900;
   }
 
   ::selection {
-    @apply bg-[#00ff9d]/30 text-white;
+    @apply bg-emerald-400/30 text-slate-900;
   }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    @apply w-1.5;
+    @apply w-2;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-[#0a192f];
+    @apply bg-slate-100;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-[#00ff9d]/70 rounded-full transition-colors duration-300;
+    @apply bg-emerald-500 rounded-full transition-colors duration-300;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-[#00ff9d];
+    @apply bg-emerald-600;
   }
 }
 
@@ -44,21 +44,61 @@
   100% { transform: translateY(0px); }
 }
 
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
 
-/* Gradient text */
-.text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#00ff9d] to-[#64ffda];
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
-/* Glass effect */
+/* Gradient text */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600;
+}
+
+/* Modern glass effect */
 .glass-effect {
-  @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
+  @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl;
+}
+
+.glass-dark {
+  @apply bg-slate-900/80 backdrop-blur-xl border border-slate-800/50 shadow-2xl;
 }
 
 /* Custom focus styles */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-[#00ff9d]/50 focus:ring-offset-2 focus:ring-offset-[#0a192f];
+  @apply focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-white;
+}
+
+/* Modern card styles */
+.card-modern {
+  @apply bg-white rounded-2xl shadow-lg border border-slate-200/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300;
+}
+
+.card-modern-dark {
+  @apply bg-slate-800 rounded-2xl shadow-lg border border-slate-700/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transform hover:scale-105 transition-all duration-300;
+}
+
+.btn-secondary {
+  @apply bg-white text-slate-700 px-6 py-3 rounded-xl font-semibold border-2 border-slate-200 hover:border-emerald-500 hover:text-emerald-600 shadow-lg hover:shadow-xl hover:shadow-emerald-500/10 transform hover:scale-105 transition-all duration-300;
+}
+
+.btn-ghost {
+  @apply bg-transparent text-emerald-600 px-6 py-3 rounded-xl font-semibold border border-emerald-500 hover:bg-emerald-50 transition-all duration-300;
+}
+
+/* Gradient utilities */
+.bg-gradient-radial {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(20, 184, 166, 0.05) 50%, transparent 100%);
 }
