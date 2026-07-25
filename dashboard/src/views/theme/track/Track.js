@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import API_URL from '../../../config/api.js';
 import {
   CCard,
   CCardBody,
@@ -40,7 +41,6 @@ import {
 } from "@coreui/icons";
 import { useNavigate } from "react-router-dom";
 import { format } from 'date-fns';
-import API_URL from '../../../config/api.js';
 import { toast } from 'react-toastify';
 
 const Track = () => {
@@ -265,7 +265,7 @@ const Track = () => {
                         {token.category === 'image' ? (
                           <CTooltip content="View image">
                             <CLink 
-                              href={token.imageurl} 
+                              href={`${API_URL.replace(/\/$/, '')}/image/${token.token}`} 
                               target="_blank"
                               className="category-link"
                             >

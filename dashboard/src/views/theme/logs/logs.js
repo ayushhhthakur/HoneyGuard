@@ -65,7 +65,7 @@ const Logs = () => {
   const fetchLogs = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`${API_URL}/logs`, {
+      const response = await axios.get(`${API_URL}/stats/logs`, {
         params: {
           timeRange: selectedTimeRange,
           level: selectedLevel !== 'all' ? selectedLevel : undefined,

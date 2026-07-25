@@ -15,21 +15,11 @@ import {
   useColorModes,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import {
-  cilBell,
-  cilContrast,
-  cilEnvelopeOpen,
-  cilList,
-  cilMenu,
-  cilMoon,
-  cilSun,
-} from '@coreui/icons'
+import { cilContrast, cilMenu, cilMoon, cilSun } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
-import { AppHeaderDropdown } from './header/index'
-import { AppNotificationDropdown } from './header/index'
-import { AppMessagesDropdown } from './header/index'
-import { AppTasksDropdown } from './header/index'
+import { AppHeaderDropdown, AppNotificationDropdown } from './header/index'
+import OrgSwitcher from './header/OrgSwitcher'
 
 const AppHeader = () => {
   const headerRef = useRef()
@@ -61,24 +51,28 @@ const AppHeader = () => {
             </CNavLink>
           </CNavItem>
           <CNavItem>
-            <CNavLink href="#">Users</CNavLink>
+            <CNavLink to="/alerts" as={NavLink}>
+              Alerts
+            </CNavLink>
           </CNavItem>
           <CNavItem>
-            <CNavLink href="#">Settings</CNavLink>
+            <CNavLink to="/team" as={NavLink}>
+              Team
+            </CNavLink>
           </CNavItem>
         </CHeaderNav>
         <CHeaderNav className="ms-auto">
           <div className="nav-item">
-            <AppNotificationDropdown />
-          </div>
-          <div className="nav-item">
-            <AppMessagesDropdown />
-          </div>
-          <div className="nav-item">
-            <AppTasksDropdown />
+            <OrgSwitcher />
           </div>
         </CHeaderNav>
         <CHeaderNav>
+          <li className="nav-item py-1">
+            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
+          </li>
+          <div className="nav-item">
+            <AppNotificationDropdown />
+          </div>
           <li className="nav-item py-1">
             <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
           </li>

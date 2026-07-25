@@ -1,235 +1,196 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faShieldHalved, 
-  faLock, 
-  faCode, 
-  faSearch, 
-  faBug, 
-  faRobot,
+import {
+  faKey,
+  faFileCode,
+  faBug,
+  faEnvelope,
+  faDatabase,
   faChartLine,
   faServer,
-  faFileCode,
-  faKey,
-  faEnvelope,
-  faDatabase
+  faChevronRight,
+  faLock,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
+import { faAws, faGoogle, faMicrosoft, faSlack } from '@fortawesome/free-brands-svg-icons';
 
 function Services() {
   const services = [
     {
       icon: faKey,
-      title: "Credential Honeytoken Service",
-      description: "Generate and monitor sophisticated fake credentials that blend seamlessly with your infrastructure.",
-      features: [
-        "AI-generated usernames and passwords",
-        "API key honeytokens",
-        "Email login tracking",
-        "Access pattern monitoring"
-      ]
+      title: "Credential Decoys",
+      description: "Inject trackable API keys, database URLs, and root passwords into development directories and source control repositories to trap internal and external threat actors.",
+      useCase: "Detect developers copying source code, malicious internal scans, and Git leakage."
     },
     {
       icon: faFileCode,
-      title: "Document Tracking Service",
-      description: "Create trackable documents with embedded honeytokens for comprehensive threat detection.",
-      features: [
-        "PDF tracking links",
-        "Word document monitoring",
-        "Excel file tracking",
-        "Cloud storage integration"
-      ]
+      title: "Document Beacons",
+      description: "Generate Excel sheets, Word files, and PDF guides that beacon back location logs and device markers to HoneyGuard collectors the instant they are opened.",
+      useCase: "Track sensitive file leakage, phishing downloads, and intellectual property theft."
     },
     {
       icon: faBug,
-      title: "Malware Simulation Service",
-      description: "Deploy fake malware files that trigger alerts when accessed by potential threats.",
-      features: [
-        "Executable honeytokens",
-        "Archive file tracking",
-        "Signature monitoring",
-        "Behavior analysis"
-      ]
+      title: "Malware Simulation",
+      description: "Deploy binary files mimicking critical cluster configuration scripts or deployment files. Alert security operators whenever they are accessed or execution is attempted.",
+      useCase: "Detect host privilege escalations, unauthorized server access, and container breakout tests."
     },
     {
       icon: faEnvelope,
-      title: "Email Integration Service",
-      description: "Seamlessly integrate honeytokens with your email systems for phishing detection.",
-      features: [
-        "Gmail/Outlook integration",
-        "Email credential tracking",
-        "Phishing attempt detection",
-        "Real-time alerts"
-      ]
+      title: "Email Baits & Traps",
+      description: "Seamlessly seed fake corporate addresses and mail credentials into server caches, immediately notifying SOC managers if they are targeted in password spray attacks.",
+      useCase: "Expose phishing groups, server mailbox scanning, and email compromise campaigns."
     },
     {
       icon: faDatabase,
-      title: "SIEM Integration Service",
-      description: "Connect HoneyGuard with your existing security infrastructure for centralized monitoring.",
-      features: [
-        "Splunk integration",
-        "Elasticsearch support",
-        "Custom API endpoints",
-        "Data synchronization"
-      ]
+      title: "SIEM Collectors",
+      description: "Stream webhook telemetry and metadata payloads directly into monitoring stacks, automatically triggering automated remediation policies in real-time.",
+      useCase: "Centralize alert logging, sync with existing SOC pipelines, and auto-quarantine."
     },
     {
       icon: faChartLine,
-      title: "Analytics Service",
-      description: "Comprehensive analytics and visualization of threat detection data.",
-      features: [
-        "Real-time dashboards",
-        "Attack pattern analysis",
-        "Threat intelligence",
-        "Custom reporting"
+      title: "Threat Intel Analytics",
+      description: "Visualize geographical vectors, intruder system fingerprint signatures, and targeted decoy nodes in an interactive incident command dashboard.",
+      useCase: "Analyze attack methods, map threat actor groups, and build security audits."
+    }
+  ];
+
+  const integrationCategories = [
+    {
+      title: "Cloud Infrastructure Platforms",
+      items: [
+        { name: "Amazon Web Services", icon: faAws, active: true },
+        { name: "Google Cloud Platform", icon: faGoogle, active: true },
+        { name: "Microsoft Azure", icon: faMicrosoft, active: true }
+      ]
+    },
+    {
+      title: "Communication & Messaging Channels",
+      items: [
+        { name: "Slack Alerts", icon: faSlack, active: true },
+        { name: "Email Server (IMAP)", icon: faEnvelope, active: true },
+        { name: "Syslog Endpoint", icon: faServer, active: true }
+      ]
+    },
+    {
+      title: "Operational SIEM Pipelines",
+      items: [
+        { name: "Splunk Daemon", icon: faDatabase, active: true },
+        { name: "Elastic Stack", icon: faDatabase, active: true },
+        { name: "Custom API Sync", icon: faChevronRight, active: true }
       ]
     }
   ];
 
   return (
-    <div className="min-h-screen py-20 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen py-16 relative">
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-20">
-        <motion.h1
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-6xl font-bold mb-6 text-gradient"
-        >
-          Our Services
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-xl text-slate-600 max-w-2xl mx-auto"
-        >
-          Comprehensive honeytoken generation and threat detection services to protect your infrastructure
-        </motion.p>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-24 space-y-4">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyber-cyan/10 border border-cyber-cyan/20 rounded-full text-xs font-mono text-cyber-cyan">
+          SERVICE CATALOG
+        </div>
+        <h1 className="text-4xl sm:text-6xl font-display font-bold tracking-tight text-white leading-tight">
+          Active Defense <span className="text-transparent bg-clip-text bg-gradient-to-r from-honey-amber to-yellow-400">Capabilities</span>
+        </h1>
+        <p className="text-slate-400 text-lg max-w-2xl mx-auto font-light">
+          Deploy tactical, high-fidelity security traps to detect insider anomalies, network discoveries, and credential breaches.
+        </p>
       </section>
 
       {/* Services Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-32">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className="card-modern group hover:shadow-2xl hover:shadow-emerald-500/10"
-            >
-              <div className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <FontAwesomeIcon icon={service.icon} className="text-2xl text-white" />
+          {services.map((s, i) => (
+            <div key={i} className="cyber-card p-8 rounded-xl flex flex-col justify-between space-y-6">
+              <div>
+                <div className="w-12 h-12 bg-honey-amber/5 border border-honey-amber/20 rounded flex items-center justify-center mb-6 text-honey-amber">
+                  <FontAwesomeIcon icon={s.icon} className="text-xl" />
                 </div>
-                <h3 className="text-2xl font-semibold mb-4 text-slate-900 group-hover:text-emerald-600 transition-colors">
-                  {service.title}
-                </h3>
-                <p className="text-slate-600 mb-6 leading-relaxed">
-                  {service.description}
-                </p>
-                <ul className="space-y-3">
-                  {service.features.map((feature, fIndex) => (
-                    <motion.li
-                      key={fIndex}
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 + fIndex * 0.1 }}
-                      className="flex items-center space-x-3 text-slate-700"
-                    >
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0"></div>
-                      <span>{feature}</span>
-                    </motion.li>
-                  ))}
-                </ul>
+                <h3 className="text-xl font-display font-bold text-slate-100 mb-3">{s.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed mb-4">{s.description}</p>
               </div>
-            </motion.div>
+              
+              <div className="space-y-4 border-t border-slate-900 pt-4">
+                <div className="text-xs text-slate-500 font-mono">
+                  <span className="text-honey-amber font-semibold">PRIMARY USE:</span><br />
+                  <span className="text-slate-400">{s.useCase}</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-600 flex justify-between items-center">
+                  <span>METRIC: LOG_INSTANT</span>
+                  <span className="flex items-center gap-1 text-cyber-cyan">
+                    <span className="w-1 h-1 rounded-full bg-cyber-cyan"></span>
+                    MONITORED
+                  </span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Integration Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <motion.h2
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          className="text-4xl md:text-5xl font-bold text-center mb-12 text-gradient"
-        >
-          Seamless Integration
-        </motion.h2>
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {[
-            {
-              icon: faServer,
-              title: "Infrastructure",
-              items: ["AWS", "Google Cloud", "Azure", "On-premise"]
-            },
-            {
-              icon: faEnvelope,
-              title: "Communication",
-              items: ["Gmail", "Outlook", "Slack", "Teams"]
-            },
-            {
-              icon: faDatabase,
-              title: "Security Systems",
-              items: ["Splunk", "ELK Stack", "Custom SIEM", "API Integration"]
-            }
-          ].map((platform, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="card-modern p-6 text-center"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <FontAwesomeIcon icon={platform.icon} className="text-2xl text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-4">{platform.title}</h3>
-              <ul className="space-y-3">
-                {platform.items.map((item, iIndex) => (
-                  <li key={iIndex} className="text-slate-600 flex items-center justify-center space-x-2">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          className="glass-effect p-12 rounded-3xl border-emerald-200/50 text-center bg-gradient-to-r from-emerald-50/30 to-teal-50/30"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gradient">
-            Ready to Deploy HoneyGuard?
-          </h2>
-          <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-            Get started with our advanced honeytoken generation and threat detection services
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-primary px-8 py-4 text-lg"
-            >
-              Schedule Demo
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-ghost px-8 py-4 text-lg"
-            >
-              Contact Sales
-            </motion.button>
+      {/* Ecosystem Integrations Section */}
+      <section className="py-24 border-t border-slate-900 bg-[#06080f]/50 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-3xl font-display font-bold text-white">
+              Ecosystem Integrations
+            </h2>
+            <p className="text-slate-400 text-sm font-light max-w-xl mx-auto">
+              We sync alert signals directly with your existing infrastructure. No custom code or agents needed in your production containers.
+            </p>
           </div>
-        </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {integrationCategories.map((category, idx) => (
+              <div key={idx} className="cyber-card p-6 rounded-xl space-y-6">
+                <h3 className="font-display font-bold text-sm uppercase text-slate-400 border-l-2 border-cyber-cyan pl-3">
+                  {category.title}
+                </h3>
+                
+                <div className="space-y-3">
+                  {category.items.map((item, itemIdx) => (
+                    <div
+                      key={itemIdx}
+                      className="p-3 bg-[#05070c] border border-slate-800 rounded flex items-center justify-between font-mono text-xs text-slate-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-cyber-cyan text-sm w-5 text-center">
+                          <FontAwesomeIcon icon={item.icon} />
+                        </div>
+                        <span>{item.name}</span>
+                      </div>
+                      <span className="text-[10px] text-cyber-cyan font-bold tracking-widest flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-cyber-cyan"></span>
+                        ACTIVE
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Deployment SLA CTA */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="cyber-card p-12 rounded-xl text-center space-y-6 border-honey-amber/20 relative overflow-hidden">
+          <div className="cyber-scan-line cyber-scan-line-amber"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-honey-amber/5 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <h2 className="text-2xl sm:text-4xl font-display font-bold text-white">
+            Custom Security Integration Required?
+          </h2>
+          <p className="text-slate-400 text-sm max-w-xl mx-auto font-light leading-relaxed">
+            We provide on-premise monitoring consoles, private VPC subnet beacon routing, and compliance SLAs (SOC2/HIPAA) for enterprise customers requiring offline systems.
+          </p>
+
+          <div className="flex justify-center gap-4 pt-4">
+            <a href="mailto:contact.ideatex@gmail.com" className="btn-cyber-amber px-8 py-3 rounded text-sm">
+              Contact Infrastructure Team
+            </a>
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -2,24 +2,20 @@ import React from 'react'
 import CIcon from '@coreui/icons-react'
 import {
   cilBell,
-  cilCalculator,
-  cilChartPie,
-  cilCursor,
-  cilDescription,
-  cilExternalLink,
-  cilNotes,
   cilPencil,
-  cilPuzzle,
   cilSpeedometer,
-  cilStar,
   cilLocationPin,
   cilFingerprint,
-  cilLaptop,
   cilGlobeAlt,
+  cilPeople,
+  cilDevices,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
-const _nav = [
+// A function (not a static array) so we can hide role-gated items — Team
+// management is visible to everyone (read-only for non-admins), but the
+// nav itself doesn't need role filtering beyond what the page enforces.
+const getNav = () => [
   {
     component: CNavItem,
     name: 'Dashboard',
@@ -28,7 +24,7 @@ const _nav = [
   },
   {
     component: CNavTitle,
-    name: 'Utils',
+    name: 'Honeytokens',
   },
   {
     component: CNavItem,
@@ -42,12 +38,18 @@ const _nav = [
     to: '/utils/track',
     icon: <CIcon icon={cilGlobeAlt} customClassName="nav-icon" />,
   },
-  // {
-  //   component: CNavItem,
-  //   name: 'Logs',
-  //   to: '/utils/logs',
-  //   icon: <CIcon icon={cilLaptop} customClassName="nav-icon" />,
-  // },
+  {
+    component: CNavItem,
+    name: 'Alerts',
+    to: '/alerts',
+    icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Fingerprints',
+    to: '/fingerprints',
+    icon: <CIcon icon={cilDevices} customClassName="nav-icon" />,
+  },
   {
     component: CNavItem,
     name: 'Maps',
@@ -60,6 +62,16 @@ const _nav = [
     to: '/utils/category',
     icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
   },
+  {
+    component: CNavTitle,
+    name: 'Organization',
+  },
+  {
+    component: CNavItem,
+    name: 'Team',
+    to: '/team',
+    icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+  },
 ]
 
-export default _nav
+export default getNav

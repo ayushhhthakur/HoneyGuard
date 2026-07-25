@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -7,218 +7,227 @@ import {
   faMapMarkerAlt,
   faComments,
   faHeadset,
-  faPaperPlane
+  faPaperPlane,
+  faTerminal,
+  faGlobe,
+  faLock,
+  faKey
 } from '@fortawesome/free-solid-svg-icons';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 
 function Contact() {
+  const [senderName, setSenderName] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+  const [senderMessage, setSenderMessage] = useState('');
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    // Simulate API write
+    setTimeout(() => {
+      setLoading(false);
+      setFormSubmitted(true);
+    }, 1500);
+  };
+
   return (
-    <div className="min-h-screen py-20 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen py-16 relative">
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-20">
-        <motion.h1
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-6xl font-bold mb-6 text-gradient"
-        >
-          Get in Touch
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-xl text-slate-600 max-w-2xl mx-auto"
-        >
-          We're here to help with your blockchain security needs
-        </motion.p>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-24 space-y-4">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyber-cyan/10 border border-cyber-cyan/20 rounded-full text-xs font-mono text-cyber-cyan">
+          COMMUNICATION NODE
+        </div>
+        <h1 className="text-4xl sm:text-6xl font-display font-bold tracking-tight text-white leading-tight">
+          Initialize <span className="text-cyber-cyan text-glow-cyan">Contact Pipeline</span>
+        </h1>
+        <p className="text-slate-400 text-lg max-w-2xl mx-auto font-light">
+          Establish secure tunnels to our infrastructure security team or query decoy deployments.
+        </p>
       </section>
 
-      {/* Main Content */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="grid md:grid-cols-2 gap-12">
-          {/* Contact Information */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            className="space-y-8"
-          >
-            <h2 className="text-3xl font-bold text-slate-900 mb-8">Contact Information</h2>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {[
-                { icon: faEnvelope, title: "Email", content: "contact.ideatex@gmail.com" },
-                { icon: faPhone, title: "Phone", content: "+91 8715808090" },
-                { icon: faMapMarkerAlt, title: "Location", content: "Jammu, India" },
-                { icon: faComments, title: "Live Chat", content: "Available 24/7" }
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="card-modern group hover:border-emerald-200 p-6"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <FontAwesomeIcon icon={item.icon} className="text-white text-lg" />
-                    </div>
-                    <div>
-                      <h3 className="text-slate-900 font-semibold mb-1">{item.title}</h3>
-                      <p className="text-slate-600">{item.content}</p>
-                    </div>
+      {/* Main Content Grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
+          
+          {/* Node Information Panel */}
+          <div className="lg:col-span-5 flex flex-col justify-between cyber-card p-8 rounded-xl border-white/5 space-y-8">
+            <div className="cyber-scan-line"></div>
+            
+            <div className="space-y-6">
+              <h2 className="text-2xl font-display font-bold text-slate-100 border-b border-slate-900 pb-3">
+                Active Channels
+              </h2>
+              
+              <div className="space-y-5 font-mono text-xs text-slate-400">
+                <div className="p-4 bg-[#05070c] border border-slate-800 rounded relative overflow-hidden group">
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse"></span>
+                    <span className="text-[8px] text-cyber-cyan font-bold">ONLINE</span>
                   </div>
-                </motion.div>
-              ))}
+                  <div className="text-[10px] text-slate-500 mb-1">PGP SMTP ENDPOINT</div>
+                  <div className="text-sm font-semibold text-slate-200">contact.ideatex@gmail.com</div>
+                </div>
+
+                <div className="p-4 bg-[#05070c] border border-slate-800 rounded relative overflow-hidden">
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan"></span>
+                    <span className="text-[8px] text-slate-500 font-bold">SECURE</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mb-1">VOIP TRUNK LINK</div>
+                  <div className="text-sm font-semibold text-slate-200">+91 8715808090</div>
+                </div>
+
+                <div className="p-4 bg-[#05070c] border border-slate-800 rounded relative overflow-hidden">
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyber-cyan"></span>
+                    <span className="text-[8px] text-slate-500 font-bold">LOC_ID</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mb-1">GEOGRAPHICAL HQ</div>
+                  <div className="text-sm font-semibold text-slate-200">Jammu, India</div>
+                </div>
+              </div>
             </div>
-          </motion.div>
 
-          {/* Contact Form */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            className="card-modern p-8"
+            <div className="space-y-4 border-t border-slate-900 pt-6">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-500">Security Ping:</span>
+                <span className="text-cyber-cyan font-semibold">12ms (FAST)</span>
+              </div>
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-500">Protocol Node:</span>
+                <span className="text-slate-300">HTTPS / TLS 1.3</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Terminal Command Form */}
+          <div className="lg:col-span-7 flex flex-col bg-[#04060b] border border-slate-900 rounded-xl overflow-hidden shadow-2xl min-h-[450px]">
+            {/* Terminal Header */}
+            <div className="terminal-header px-4 py-3 flex items-center justify-between border-b border-slate-900">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                <span className="pl-2 font-mono text-xs text-slate-500">secure-envelope@honeyguard-comms</span>
+              </div>
+              <span className="text-[10px] font-mono text-honey-amber uppercase">SHIELDED</span>
+            </div>
+
+            {formSubmitted ? (
+              <div className="flex-grow flex flex-col items-center justify-center p-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/30 flex items-center justify-center text-cyber-cyan text-2xl text-glow-cyan">
+                  <FontAwesomeIcon icon={faPaperPlane} className="animate-bounce" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-slate-100">Message Encoded & Dispatched</h3>
+                <p className="text-slate-400 text-xs font-mono max-w-sm">
+                  Packet transmitted successfully. Our incident response team will return payload callback responses on your sender channel within 12 hours.
+                </p>
+                <button
+                  onClick={() => setFormSubmitted(false)}
+                  className="btn-cyber-outline px-6 py-2 rounded text-xs font-mono"
+                >
+                  Clear Buffer & Send New Packet
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex-grow flex flex-col justify-between p-6 space-y-6 font-mono text-xs">
+                <div className="space-y-5">
+                  
+                  {/* Name field */}
+                  <div className="space-y-2">
+                    <label className="text-slate-500 uppercase tracking-widest">
+                      honeyguard:~$ input --sender-name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      className="w-full bg-[#05070c] border border-slate-900 rounded p-3 text-slate-200 focus:outline-none focus:border-cyber-cyan transition-colors"
+                      placeholder="e.g. John Doe, Director of Security"
+                    />
+                  </div>
+
+                  {/* Email field */}
+                  <div className="space-y-2">
+                    <label className="text-slate-500 uppercase tracking-widest">
+                      honeyguard:~$ input --sender-email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={senderEmail}
+                      onChange={(e) => setSenderEmail(e.target.value)}
+                      className="w-full bg-[#05070c] border border-slate-900 rounded p-3 text-slate-200 focus:outline-none focus:border-cyber-cyan transition-colors"
+                      placeholder="e.g. j.doe@enterprise-cyber.net"
+                    />
+                  </div>
+
+                  {/* Message field */}
+                  <div className="space-y-2">
+                    <label className="text-slate-500 uppercase tracking-widest">
+                      honeyguard:~$ input --message-body
+                    </label>
+                    <textarea
+                      required
+                      rows="4"
+                      value={senderMessage}
+                      onChange={(e) => setSenderMessage(e.target.value)}
+                      className="w-full bg-[#05070c] border border-slate-900 rounded p-3 text-slate-200 focus:outline-none focus:border-cyber-cyan transition-colors resize-none"
+                      placeholder="Input message payload here..."
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-900/60">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn-cyber-cyan py-3.5 rounded flex items-center justify-center gap-2 font-bold tracking-widest"
+                  >
+                    {loading ? (
+                      <>
+                        <span className="w-2 h-2 bg-slate-900 rounded-full animate-ping mr-2"></span>
+                        DISPATCHING PACKETS...
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon icon={faPaperPlane} />
+                        TRANSMIT PACKET
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Community Discord Section */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center pb-12">
+        <div className="cyber-card p-10 rounded-xl space-y-6 border-slate-900">
+          <div className="inline-flex p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 text-2xl">
+            <FontAwesomeIcon icon={faDiscord} />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-display font-bold text-slate-100">
+            Join the Active Defense Discord
+          </h2>
+          <p className="text-slate-400 text-xs font-mono max-w-md mx-auto leading-relaxed">
+            Collaborate on custom decoy templates, get implementation tips, and talk real-time threat intelligence with our netsec engineering community.
+          </p>
+          <a
+            href="https://discord.gg/honeyguard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block btn-cyber-outline px-8 py-3 rounded text-xs font-mono tracking-widest"
           >
-            <h2 className="text-3xl font-bold text-slate-900 mb-8">Send us a Message</h2>
-            <form className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-slate-700 text-sm font-medium">Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-900 placeholder-slate-400 transition-all duration-300"
-                    placeholder="Your name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-slate-700 text-sm font-medium">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-900 placeholder-slate-400 transition-all duration-300"
-                    placeholder="Your email"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="subject" className="text-slate-700 text-sm font-medium">Subject</label>
-                <input
-                  type="text"
-                  id="subject"
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-900 placeholder-slate-400 transition-all duration-300"
-                  placeholder="Message subject"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="message" className="text-slate-700 text-sm font-medium">Message</label>
-                <textarea
-                  id="message"
-                  rows="5"
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-900 placeholder-slate-400 transition-all duration-300 resize-none"
-                  placeholder="Your message"
-                ></textarea>
-              </div>
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full btn-primary py-4 text-lg flex items-center justify-center space-x-2"
-              >
-                <FontAwesomeIcon icon={faPaperPlane} />
-                <span>Send Message</span>
-              </motion.button>
-            </form>
-          </motion.div>
+            !join discord
+          </a>
         </div>
-      </section>
-
-      {/* Support Channels */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <motion.h2
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900"
-        >
-          Other Ways to Connect
-        </motion.h2>
-        <div className="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {[
-            {
-              icon: faHeadset,
-              title: "Technical Support",
-              description: "Get help with technical issues and implementation",
-              button: "Open Ticket"
-            },
-            {
-              icon: faComments,
-              title: "Community",
-              description: "Join our Discord community for discussions",
-              button: "Join Discord"
-            }
-          ].map((channel, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="card-modern group hover:shadow-xl hover:shadow-emerald-500/10 text-center p-8"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <FontAwesomeIcon icon={channel.icon} className="text-2xl text-white" />
-              </div>
-              <h3 className="text-2xl font-semibold text-slate-900 mb-4">{channel.title}</h3>
-              <p className="text-slate-600 mb-6">{channel.description}</p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="btn-ghost px-6 py-3"
-              >
-                {channel.button}
-              </motion.button>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQ Preview */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          className="glass-effect p-12 rounded-3xl border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30"
-        >
-          <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">Frequently Asked Questions</h2>
-          <div className="grid sm:grid-cols-2 gap-8 mb-12">
-            {[
-              {
-                question: "What is your typical response time?",
-                answer: "We aim to respond to all inquiries within 24 hours during business days."
-              },
-              {
-                question: "Do you offer emergency support?",
-                answer: "Yes, enterprise customers have access to 24/7 emergency support."
-              }
-            ].map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="card-modern p-6"
-              >
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">{faq.question}</h3>
-                <p className="text-slate-600">{faq.answer}</p>
-              </motion.div>
-            ))}
-          </div>
-          <div className="text-center">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-primary px-8 py-4 text-lg"
-            >
-              View All FAQs
-            </motion.button>
-          </div>
-        </motion.div>
       </section>
     </div>
   );

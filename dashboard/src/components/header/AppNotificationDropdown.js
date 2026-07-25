@@ -17,19 +17,15 @@ const AppNotificationDropdown = () => {
 
   return (
     <CDropdown>
-      <CDropdownToggle 
-        className="py-0" 
-        caret={false}
-        tag="div"
-      >
+      <CDropdownToggle className="py-0" caret={false} tag="div">
         <div className="position-relative d-inline-flex">
           <CIcon icon={cilBell} size="lg" className="text-gray-500" />
           {notifications.alerts > 0 && (
-            <CBadge 
-              color="danger" 
+            <CBadge
+              color="danger"
               shape="rounded-circle"
               className="position-absolute"
-              style={{ 
+              style={{
                 padding: '0.4rem 0.45rem',
                 fontSize: '0.75rem',
                 top: '-8px',
@@ -38,7 +34,7 @@ const AppNotificationDropdown = () => {
                 height: '1.2rem',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
               }}
             >
               {notifications.alerts}
@@ -48,13 +44,22 @@ const AppNotificationDropdown = () => {
       </CDropdownToggle>
       <CDropdownMenu>
         <CDropdownHeader className="bg-light fw-semibold py-2">
-          You have {notifications.alerts} notifications
+          {notifications.alerts} open alert{notifications.alerts === 1 ? '' : 's'}
         </CDropdownHeader>
-        <CDropdownItem>
-          <CIcon icon={cilBell} className="me-2" />
-          New Notification
+        {notifications.recent.length === 0 ? (
+          <CDropdownItem disabled>Nothing to see here.</CDropdownItem>
+        ) : (
+          notifications.recent.map((a) => (
+            <CDropdownItem key={a.id} href="#/alerts">
+              <CIcon icon={cilBell} className="me-2" />
+              {a.message}
+            </CDropdownItem>
+          ))
+        )}
+        <CDropdownDivider />
+        <CDropdownItem href="#/alerts" className="text-center fw-semibold">
+          View all alerts
         </CDropdownItem>
-        {/* Rest of your dropdown items */}
       </CDropdownMenu>
     </CDropdown>
   )

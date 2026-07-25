@@ -8,11 +8,10 @@ const Maps = React.lazy(() => import('./views/theme/maps/Maps.js'))
 const TrackToken = React.lazy(() => import('./views/theme/tracktoken/TrackToken.js'))
 const Category = React.lazy(() => import('./views/theme/category/Category.js'))
 const Stats = React.lazy(() => import('./views/theme/stats/Stats.js'))
-
-
-
-// Add this to your imports
-
+const Alerts = React.lazy(() => import('./views/alerts/Alerts.js'))
+const Fingerprints = React.lazy(() => import('./views/fingerprints/Fingerprints.js'))
+const FingerprintDetail = React.lazy(() => import('./views/fingerprints/FingerprintDetail.js'))
+const Team = React.lazy(() => import('./views/team/Team.js'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
@@ -25,6 +24,10 @@ const routes = [
   { path: '/utils/logs', name: 'Logs', element: Log },
   { path: '/utils/maps', name: 'Maps', element: Maps },
   { path: '/utils/category', name: 'Category', element: Category },
+  { path: '/alerts', name: 'Alerts', element: Alerts },
+  { path: '/fingerprints', name: 'Fingerprints', element: Fingerprints },
+  { path: '/fingerprints/:id', name: 'FingerprintDetail', element: FingerprintDetail },
+  { path: '/team', name: 'Team', element: Team },
 ]
 
 export default routes

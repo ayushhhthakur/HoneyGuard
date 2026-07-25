@@ -29,19 +29,19 @@ const WidgetsDropdown = (props) => {
       }
 
       // Fetch logs count
-      const logsCountResponse = await axios.get(`${API_URL}/logs/count`)
+      const logsCountResponse = await axios.get(`${API_URL}/stats/logs-count`)
       if (logsCountResponse.data.success) {
         setLogsCount(logsCountResponse.data.data)
       }
 
       // Fetch token stats
-      const tokenStatsResponse = await axios.get(`${API_URL}/api/stats/tokens`)
+      const tokenStatsResponse = await axios.get(`${API_URL}/stats/tokens`)
       if (tokenStatsResponse.data.success) {
         setTokenStats(tokenStatsResponse.data.data)
       }
 
       // Fetch activity stats
-      const activityStatsResponse = await axios.get(`${API_URL}/api/stats/activity`)
+      const activityStatsResponse = await axios.get(`${API_URL}/stats/activity`)
       if (activityStatsResponse.data.success) {
         setActivityStats(activityStatsResponse.data.data)
       }

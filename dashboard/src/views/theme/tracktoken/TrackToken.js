@@ -85,6 +85,11 @@ const TrackToken = () => {
     alert('Copied to clipboard!');
   }, []);
 
+  const getImageTrackingUrl = useCallback(
+    (tokenValue) => `${API_URL.replace(/\/$/, '')}/image/${tokenValue}`,
+    []
+  );
+
   const redirectToStats = useCallback(() => {
     navigate(`/utils/track/stats/${token}`);
   }, [navigate, token]);
@@ -132,11 +137,11 @@ const TrackToken = () => {
                     <div className="d-flex justify-content-between align-items-center">
                       <strong>Image URL:</strong>
                       <div className="d-flex align-items-center">
-                        <CLink href={`https://honeyguard.onrender.com/image/${token}`} target="_blank" className="me-2">
+                        <CLink href={getImageTrackingUrl(token)} target="_blank" className="me-2">
                           View Image
                         </CLink>
                         <button
-                          onClick={() => copyToClipboard(tokenData.imageurl)}
+                          onClick={() => copyToClipboard(getImageTrackingUrl(token))}
                           style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                         >
                           <CIcon icon={cilCopy} />

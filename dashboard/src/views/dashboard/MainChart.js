@@ -1,9 +1,46 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
+import axios from 'axios'
 import { CChartLine } from '@coreui/react-chartjs'
 import { getStyle } from '@coreui/utils'
+import API_URL from '../../config/api'
+import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabaseClient'
 
 const MainChart = () => {
   const chartRef = useRef(null)
+  const { activeOrg } = useAuth()
+  const [tokenStats, setTokenStats] = useState({ labels: [], values: [] })
+  const [activityStats, setActivityStats] = useState({ labels: [], values: [] })
+
+  const load = useCallback(async () => {
+    if (!activeOrg) return
+    try {
+      const [tokensRes, activityRes] = await Promise.all([
+        axios.get(`${API_URL}/stats/tokens`),
+        axios.get(`${API_URL}/stats/activity`),
+      ])
+      if (tokensRes.data.success) setTokenStats(tokensRes.data.data)
+      if (activityRes.data.success) setActivityStats(activityRes.data.data)
+    } catch (err) {
+      console.error('Failed to load chart data:', err)
+    }
+  }, [activeOrg])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  // Live-refresh the chart whenever a new log or token lands for this org,
+  // instead of polling — Supabase Realtime pushes it to us.
+  useEffect(() => {
+    if (!activeOrg) return
+    const channel = supabase
+      .channel(`main-chart-${activeOrg.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'token_logs', filter: `org_id=eq.${activeOrg.id}` }, load)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tokens', filter: `org_id=eq.${activeOrg.id}` }, load)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [activeOrg, load])
 
   useEffect(() => {
     const handleColorSchemeChange = () => {
@@ -26,120 +63,105 @@ const MainChart = () => {
     }
   }, [chartRef])
 
-  // Static data
-  const chartData = {
-    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-    visits: [65, 59, 84, 84, 79, 82, 88],
-    uniqueVisitors: [45, 39, 64, 64, 59, 62, 68],
-    avgTime: [35, 38, 42, 40, 43, 41, 44]
-  }
+  // Merge both series onto a shared date axis so the chart doesn't break
+  // when tokens and activity were logged on different days.
+  const labels = Array.from(new Set([...tokenStats.labels, ...activityStats.labels])).sort()
+  const tokensByDate = Object.fromEntries(tokenStats.labels.map((l, i) => [l, tokenStats.values[i]]))
+  const activityByDate = Object.fromEntries(activityStats.labels.map((l, i) => [l, activityStats.values[i]]))
+
+  const noData = labels.length === 0
 
   return (
-    <CChartLine
-      ref={chartRef}
-      style={{ height: '300px', marginTop: '40px' }}
-      data={{
-        labels: chartData.labels,
-        datasets: [
-          {
-            label: 'Total Visits',
-            backgroundColor: `rgba(${getStyle('--cui-info-rgb')}, .1)`,
-            borderColor: getStyle('--cui-info'),
-            pointHoverBackgroundColor: getStyle('--cui-info'),
-            borderWidth: 2,
-            data: chartData.visits,
-            fill: true,
+    <div style={{ position: 'relative' }}>
+      {noData && (
+        <div
+          className="text-body-secondary text-center"
+          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          No activity yet — deploy a honeytoken to start seeing data here.
+        </div>
+      )}
+      <CChartLine
+        ref={chartRef}
+        style={{ height: '300px', marginTop: '40px', opacity: noData ? 0.15 : 1 }}
+        data={{
+          labels,
+          datasets: [
+            {
+              label: 'Tokens Created',
+              backgroundColor: `rgba(${getStyle('--cui-info-rgb')}, .1)`,
+              borderColor: getStyle('--cui-info'),
+              pointHoverBackgroundColor: getStyle('--cui-info'),
+              borderWidth: 2,
+              data: labels.map((d) => tokensByDate[d] || 0),
+              fill: true,
+            },
+            {
+              label: 'Honeytoken Activity',
+              backgroundColor: 'transparent',
+              borderColor: getStyle('--cui-warning'),
+              pointHoverBackgroundColor: getStyle('--cui-warning'),
+              borderWidth: 2,
+              data: labels.map((d) => activityByDate[d] || 0),
+            },
+          ],
+        }}
+        options={{
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+            },
           },
-          {
-            label: 'Unique Visitors',
-            backgroundColor: 'transparent',
-            borderColor: getStyle('--cui-success'),
-            pointHoverBackgroundColor: getStyle('--cui-success'),
-            borderWidth: 2,
-            data: chartData.uniqueVisitors,
+          scales: {
+            x: {
+              grid: {
+                color: getStyle('--cui-border-color-translucent'),
+                drawOnChartArea: false,
+              },
+              ticks: {
+                color: getStyle('--cui-body-color'),
+              },
+            },
+            y: {
+              beginAtZero: true,
+              border: {
+                color: getStyle('--cui-border-color-translucent'),
+              },
+              grid: {
+                color: getStyle('--cui-border-color-translucent'),
+              },
+              ticks: {
+                color: getStyle('--cui-body-color'),
+                maxTicksLimit: 5,
+                precision: 0,
+              },
+            },
           },
-          {
-            label: 'Average Time',
-            backgroundColor: 'transparent',
-            borderColor: getStyle('--cui-danger'),
-            pointHoverBackgroundColor: getStyle('--cui-danger'),
-            borderWidth: 1,
-            borderDash: [8, 5],
-            data: chartData.avgTime,
+          elements: {
+            line: {
+              tension: 0.4,
+            },
+            point: {
+              radius: 2,
+              hitRadius: 10,
+              hoverRadius: 4,
+              hoverBorderWidth: 3,
+            },
           },
-        ],
-      }}
-      options={{
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-          },
-          tooltip: {
-            mode: 'index',
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
             intersect: false,
-            callbacks: {
-              label: function(context) {
-                let label = context.dataset.label || ''
-                if (label) {
-                  label += ': '
-                }
-                if (context.dataset.label === 'Average Time') {
-                  label += context.parsed.y + ' min'
-                } else {
-                  label += context.parsed.y
-                }
-                return label
-              }
-            }
           },
-        },
-        scales: {
-          x: {
-            grid: {
-              color: getStyle('--cui-border-color-translucent'),
-              drawOnChartArea: false,
-            },
-            ticks: {
-              color: getStyle('--cui-body-color'),
-            },
-          },
-          y: {
-            beginAtZero: true,
-            border: {
-              color: getStyle('--cui-border-color-translucent'),
-            },
-            grid: {
-              color: getStyle('--cui-border-color-translucent'),
-            },
-            ticks: {
-              color: getStyle('--cui-body-color'),
-              maxTicksLimit: 5,
-              callback: function(value) {
-                return value.toLocaleString()
-              }
-            },
-          },
-        },
-        elements: {
-          line: {
-            tension: 0.4,
-          },
-          point: {
-            radius: 2,
-            hitRadius: 10,
-            hoverRadius: 4,
-            hoverBorderWidth: 3,
-          },
-        },
-        interaction: {
-          mode: 'nearest',
-          axis: 'x',
-          intersect: false
-        },
-      }}
-    />
+        }}
+      />
+    </div>
   )
 }
 

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { cilCloudUpload, cilCheckCircle, cilXCircle, cilSync, cilArrowRight, cilArrowLeft, cilHeart, cilMoney, cilPlus, cilMedicalCross } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
-import { ToastContainer, toast } from 'react-toastify'
+import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import {
   CCard,
@@ -40,9 +40,9 @@ const Tokens = () => {
 
   const categories = [
     { value: 'image', label: 'Image Token', icon: cilCloudUpload, description: 'Secure tokens for image-based assets' },
-    // { value: 'aws', label: 'AWS Token', icon: cilSync, description: 'Tokens for AWS service authentication' },
-    // { value: 'financial', label: 'Financial Token', icon: cilMoney, description: 'Secure financial transaction tokens' },
-    // { value: 'healthcare', label: 'Healthcare Token', icon: cilMedicalCross, description: 'HIPAA-compliant healthcare tokens' }
+    { value: 'aws', label: 'AWS Token', icon: cilSync, description: 'Tokens for AWS service authentication' },
+    { value: 'financial', label: 'Financial Token', icon: cilMoney, description: 'Secure financial transaction tokens' },
+    { value: 'healthcare', label: 'Healthcare Token', icon: cilMedicalCross, description: 'Healthcare-record honeytokens' }
   ]
 
   const categoryFields = {
@@ -362,7 +362,7 @@ const Tokens = () => {
         }
       })
 
-      const response = await axios.post(`${API_URL}/generate-token`, formData, {
+      const response = await axios.post(`${API_URL}/tokens`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -595,21 +595,7 @@ const Tokens = () => {
         </CAlert>
       )}
 
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        style={{
-          minWidth: '300px',
-        }}
-      />
+
 
       <style>
         {`
