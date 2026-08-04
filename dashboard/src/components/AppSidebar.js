@@ -10,11 +10,9 @@ import {
   CSidebarToggler,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
+import { cilShieldAlt } from '@coreui/icons'
 
 import { AppSidebarNav } from './AppSidebarNav'
-
-import { logo } from 'src/assets/brand/logo'
-import { sygnet } from 'src/assets/brand/sygnet'
 
 // sidebar nav config
 import getNav from '../_nav'
@@ -36,9 +34,27 @@ const AppSidebar = () => {
       }}
     >
       <CSidebarHeader className="border-bottom">
-        <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} />
-          <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
+        <CSidebarBrand to="/" className="d-flex align-items-center gap-2">
+          <span
+            className="d-flex align-items-center justify-content-center flex-shrink-0"
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 9,
+              background: 'linear-gradient(135deg, rgba(34,211,238,0.22), rgba(99,102,241,0.16))',
+              border: '1px solid rgba(34,211,238,0.35)',
+              color: 'var(--hg-accent)',
+              boxShadow: '0 0 14px rgba(34,211,238,0.25)',
+            }}
+          >
+            <CIcon icon={cilShieldAlt} size="lg" />
+          </span>
+          <span
+            className="sidebar-brand-full fw-800"
+            style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.02em', fontSize: 15 }}
+          >
+            HONEY<span style={{ color: 'var(--hg-accent)' }}>GUARD</span>
+          </span>
         </CSidebarBrand>
         <CCloseButton
           className="d-lg-none"

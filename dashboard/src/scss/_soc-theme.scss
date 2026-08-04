@@ -1,0 +1,336 @@
+// ============================================================================
+// HoneyGuard SOC Design System
+// A dark, high-density, enterprise-security aesthetic (Defender XDR /
+// Falcon / SentinelOne / Splunk ES adjacent), layered on top of CoreUI's
+// component behavior but overriding essentially all of its visual tokens.
+// Imported LAST in style.scss so these overrides win.
+// ============================================================================
+
+:root,
+[data-coreui-theme='dark'] {
+  // ---- Base palette --------------------------------------------------
+  --hg-bg-0: #05070d;           // deepest background
+  --hg-bg-1: #0a0e17;           // app background
+  --hg-bg-2: #0f1420;           // panel background
+  --hg-bg-3: #141a29;           // raised panel / hover
+  --hg-border: rgba(148, 163, 184, 0.12);
+  --hg-border-strong: rgba(148, 163, 184, 0.22);
+
+  // ---- Text ------------------------------------------------------------
+  --hg-text-primary: #e6ebf5;
+  --hg-text-secondary: #93a1b8;
+  --hg-text-muted: #5b6780;
+
+  // ---- Brand / accent ----------------------------------------------------
+  --hg-accent: #22d3ee;          // cyan — primary brand accent
+  --hg-accent-2: #6366f1;        // indigo — secondary accent
+  --hg-accent-glow: rgba(34, 211, 238, 0.35);
+
+  // ---- Severity / status --------------------------------------------------
+  --hg-critical: #fb3f5e;
+  --hg-high: #ff8a3d;
+  --hg-medium: #ffc93d;
+  --hg-low: #38bdf8;
+  --hg-safe: #2dd4a7;
+  --hg-critical-glow: rgba(251, 63, 94, 0.4);
+
+  // ---- Chart series (used by chart.js configs) ----------------------------
+  --hg-chart-1: #22d3ee;
+  --hg-chart-2: #fb3f5e;
+  --hg-chart-3: #6366f1;
+  --hg-chart-4: #ffc93d;
+
+  color-scheme: dark;
+
+  // ---- Remap CoreUI's own tokens so every existing component inherits ----
+  --cui-body-bg: var(--hg-bg-1);
+  --cui-body-color: var(--hg-text-primary);
+  --cui-border-color: var(--hg-border);
+  --cui-border-color-translucent: var(--hg-border);
+  --cui-card-bg: var(--hg-bg-2);
+  --cui-card-border-color: var(--hg-border);
+  --cui-tertiary-bg: var(--hg-bg-2);
+  --cui-secondary-color: var(--hg-text-secondary);
+  --cui-primary: var(--hg-accent);
+  --cui-primary-rgb: 34, 211, 238;
+  --cui-info: var(--hg-low);
+  --cui-info-rgb: 56, 189, 248;
+  --cui-success: var(--hg-safe);
+  --cui-success-rgb: 45, 212, 167;
+  --cui-warning: var(--hg-medium);
+  --cui-warning-rgb: 255, 201, 61;
+  --cui-danger: var(--hg-critical);
+  --cui-danger-rgb: 251, 63, 94;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(ellipse 1200px 600px at 15% -10%, rgba(34, 211, 238, 0.07), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 100% 0%, rgba(99, 102, 241, 0.06), transparent 55%),
+    var(--hg-bg-1);
+  background-attachment: fixed;
+  letter-spacing: -0.011em;
+}
+
+.text-mono,
+code,
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  letter-spacing: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+// ---- Scrollbars --------------------------------------------------------
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--hg-border-strong);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.35); }
+
+// ---- Glass panel primitive ---------------------------------------------
+.hg-glass {
+  background: linear-gradient(180deg, rgba(20, 26, 41, 0.7), rgba(15, 20, 32, 0.55));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--hg-border);
+  border-radius: 14px;
+}
+
+// ---- Micro-animations ---------------------------------------------------
+@keyframes hg-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hg-pulse-ring {
+  0% { box-shadow: 0 0 0 0 var(--hg-accent-glow); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 211, 238, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+@keyframes hg-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes hg-blink-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes hg-spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+.hg-animate-in {
+  animation: hg-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@for $i from 1 through 12 {
+  .hg-animate-in:nth-child(#{$i}) { animation-delay: #{$i * 0.05}s; }
+}
+
+// ---- Sidebar / header dark surface polish -------------------------------
+.sidebar {
+  background: linear-gradient(180deg, var(--hg-bg-0), var(--hg-bg-1) 70%) !important;
+  border-inline-end: 1px solid var(--hg-border);
+}
+.header {
+  background: rgba(10, 14, 23, 0.75) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hg-border) !important;
+}
+
+// ---- Card override: strip CoreUI's flat look for one with depth --------
+.card {
+  background: var(--hg-bg-2);
+  border: 1px solid var(--hg-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+// ---- Dashboard widget shell ----------------------------------------------
+.hg-widget {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--hg-accent), transparent 80%);
+    opacity: 0.9;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--hg-border-strong);
+    box-shadow: 0 16px 40px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--hg-border-strong);
+  }
+
+  &[data-accent='critical']::before { background: linear-gradient(90deg, var(--hg-critical), transparent 80%); }
+  &[data-accent='high']::before { background: linear-gradient(90deg, var(--hg-high), transparent 80%); }
+  &[data-accent='medium']::before { background: linear-gradient(90deg, var(--hg-medium), transparent 80%); }
+  &[data-accent='low']::before { background: linear-gradient(90deg, var(--hg-low), transparent 80%); }
+  &[data-accent='safe']::before { background: linear-gradient(90deg, var(--hg-safe), transparent 80%); }
+  &[data-accent='indigo']::before { background: linear-gradient(90deg, var(--hg-accent-2), transparent 80%); }
+}
+
+.hg-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--hg-border);
+}
+
+.hg-widget-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--hg-accent);
+}
+
+.hg-widget-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hg-text-secondary);
+}
+
+.hg-widget-actions {
+  color: var(--hg-text-muted);
+}
+
+.hg-widget-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.hg-metric {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--hg-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.hg-metric-label {
+  font-size: 12px;
+  color: var(--hg-text-secondary);
+  margin-top: 4px;
+}
+
+.hg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--hg-border-strong);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--hg-text-secondary);
+}
+.hg-chip[data-tone='critical'] { color: var(--hg-critical); border-color: rgba(251,63,94,0.3); background: rgba(251,63,94,0.1); }
+.hg-chip[data-tone='high'] { color: var(--hg-high); border-color: rgba(255,138,61,0.3); background: rgba(255,138,61,0.1); }
+.hg-chip[data-tone='medium'] { color: var(--hg-medium); border-color: rgba(255,201,61,0.3); background: rgba(255,201,61,0.1); }
+.hg-chip[data-tone='low'] { color: var(--hg-low); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.1); }
+.hg-chip[data-tone='safe'] { color: var(--hg-safe); border-color: rgba(45,212,167,0.3); background: rgba(45,212,167,0.1); }
+
+.hg-row-hover {
+  transition: background 0.15s ease;
+  border-radius: 8px;
+}
+.hg-row-hover:hover { background: rgba(148, 163, 184, 0.06); }
+
+.hg-nav-link {
+  position: relative;
+  border-radius: 10px !important;
+  margin: 2px 10px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.hg-nav-link.active,
+.hg-nav-link[aria-current='page'] {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.14), rgba(34, 211, 238, 0.02));
+  color: var(--hg-accent) !important;
+  box-shadow: inset 2px 0 0 var(--hg-accent);
+}
+
+// ---- Dashboard bento grid ------------------------------------------------
+.hg-grid {
+  display: grid;
+  gap: 14px;
+}
+.hg-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.hg-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 1399.98px) {
+  .hg-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .hg-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 767.98px) {
+  .hg-grid-4,
+  .hg-grid-3 { grid-template-columns: 1fr; }
+}
+
+.hg-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--hg-border);
+  background: rgba(148, 163, 184, 0.05);
+  color: var(--hg-text-secondary);
+  transition: all 0.2s ease;
+}
+.hg-icon-btn:hover {
+  color: var(--hg-accent);
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.08);
+  transform: rotate(-8deg);
+}
+
+// ---- Form controls (used by custom, non-CoreUI forms like the token
+// deploy wizard and onboarding pages) ------------------------------------
+.hg-input {
+  width: 100%;
+  background: var(--hg-bg-3);
+  border: 1px solid var(--hg-border-strong);
+  color: var(--hg-text-primary);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.hg-input:focus {
+  outline: none;
+  border-color: var(--hg-accent);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+.hg-input::placeholder {
+  color: var(--hg-text-muted);
+}
+select.hg-input {
+  cursor: pointer;
+}
+

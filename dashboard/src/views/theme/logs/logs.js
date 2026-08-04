@@ -1,291 +1,222 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CCol,
-  CRow,
-  CFormInput,
-  CFormSelect,
-  CButton,
-  CBadge,
-  CSpinner,
-  CAlert,
-  CDropdown,
-  CDropdownToggle,
-  CDropdownMenu,
-  CDropdownItem,
-} from '@coreui/react'
-import CIcon from '@coreui/icons-react'
+  Search,
+  Download,
+  Info,
+  AlertTriangle,
+  Bug,
+  CheckCircle2,
+  XCircle,
+  Calendar,
+} from "lucide-react";
+import { format } from "date-fns";
+import { statsApi } from "@/api/stats.api";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { AsyncBoundary } from "@/components/ui/AsyncStates";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  cilFilter,
-  cilSearch,
-  cilCloudDownload,
-  cilWarning,
-  cilInfo,
-  cilBug,
-  cilCheckCircle,
-  cilX,
-  cilCalendar,
-} from '@coreui/icons'
-import { format } from 'date-fns'
-import API_URL from '../../../config/api.js'
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+const LOG_LEVELS = {
+  info: { variant: "default", icon: Info },
+  warning: { variant: "warning", icon: AlertTriangle },
+  error: { variant: "destructive", icon: Bug },
+  success: { variant: "success", icon: CheckCircle2 },
+};
+
+const TIME_RANGES = [
+  { value: "1h", label: "Last hour" },
+  { value: "24h", label: "Last 24 hours" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+];
 
 const Logs = () => {
-  const [logs, setLogs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedLevel, setSelectedLevel] = useState('all')
-  const [selectedTimeRange, setSelectedTimeRange] = useState('24h')
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("all");
+  const [selectedTimeRange, setSelectedTimeRange] = useState("24h");
 
-  const logLevels = {
-    info: { color: 'info', icon: cilInfo },
-    warning: { color: 'warning', icon: cilWarning },
-    error: { color: 'danger', icon: cilBug },
-    success: { color: 'success', icon: cilCheckCircle },
-  }
-
-  const timeRanges = [
-    { value: '1h', label: 'Last Hour' },
-    { value: '24h', label: 'Last 24 Hours' },
-    { value: '7d', label: 'Last 7 Days' },
-    { value: '30d', label: 'Last 30 Days' },
-  ]
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await statsApi.logs({
+        timeRange: selectedTimeRange,
+        level: selectedLevel !== "all" ? selectedLevel : undefined,
+      });
+      if (response.data.success) setLogs(response.data.data);
+      else setError(response.data.error || "Failed to fetch logs");
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          "An error occurred while fetching logs",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedTimeRange, selectedLevel]);
 
   useEffect(() => {
-    fetchLogs()
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchLogs, 30000)
-    return () => clearInterval(interval)
-  }, [selectedTimeRange, selectedLevel])
+    fetchLogs();
+    // Poll for updates rather than a realtime subscription — this view is
+    // a filtered/formatted read model, not a raw table stream.
+    const interval = setInterval(fetchLogs, 30000);
+    return () => clearInterval(interval);
+  }, [fetchLogs]);
 
-  const fetchLogs = async () => {
-    try {
-      setLoading(true)
-      const response = await axios.get(`${API_URL}/stats/logs`, {
-        params: {
-          timeRange: selectedTimeRange,
-          level: selectedLevel !== 'all' ? selectedLevel : undefined,
-        },
-      })
-      if (response.data.success) {
-        setLogs(response.data.data)
-      } else {
-        setError(response.data.error || 'Failed to fetch logs')
-      }
-    } catch (err) {
-      setError(err.message || 'An error occurred while fetching logs')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const filteredLogs = useMemo(
+    () =>
+      logs.filter((log) => {
+        const term = searchTerm.toLowerCase();
+        return (
+          term === "" ||
+          log.message.toLowerCase().includes(term) ||
+          log.source.toLowerCase().includes(term) ||
+          (log.ip_address || "").toLowerCase().includes(term)
+        );
+      }),
+    [logs, searchTerm],
+  );
 
   const exportLogs = () => {
-    const filteredLogs = getFilteredLogs()
     const csv = [
-      ['Timestamp', 'Level', 'Message', 'Source', 'IP Address'].join(','),
-      ...filteredLogs.map(log => [
-        format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss'),
-        log.level,
-        `"${log.message.replace(/"/g, '""')}"`,
-        log.source,
-        log.ip_address,
-      ].join(',')),
-    ].join('\n')
+      ["Timestamp", "Level", "Message", "Source", "IP Address"].join(","),
+      ...filteredLogs.map((log) =>
+        [
+          format(new Date(log.timestamp), "yyyy-MM-dd HH:mm:ss"),
+          log.level,
+          `"${log.message.replace(/"/g, '""')}"`,
+          log.source,
+          log.ip_address,
+        ].join(","),
+      ),
+    ].join("\n");
 
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `logs-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
-
-  const getFilteredLogs = () => {
-    return logs.filter(log => {
-      const matchesSearch = searchTerm === '' ||
-        log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.ip_address.toLowerCase().includes(searchTerm.toLowerCase())
-
-      const matchesLevel = selectedLevel === 'all' || log.level === selectedLevel
-
-      return matchesSearch && matchesLevel
-    })
-  }
-
-  const renderLogIcon = (level) => {
-    const logLevel = logLevels[level] || { color: 'secondary', icon: cilX }
-    return <CIcon icon={logLevel.icon} className={`text-${logLevel.color} me-2`} />
-  }
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `logs-${format(new Date(), "yyyy-MM-dd-HH-mm-ss")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
-    <CCard className="shadow-sm">
-      <CCardHeader className="bg-light">
-        <CRow className="align-items-center">
-          <CCol>
-            <h4 className="mb-0">System Logs</h4>
-          </CCol>
-          <CCol xs="auto">
-            <CButton 
-              color="primary" 
-              variant="outline" 
-              onClick={exportLogs}
-              className="me-2"
-            >
-              <CIcon icon={cilCloudDownload} className="me-2" />
-              Export
-            </CButton>
-          </CCol>
-        </CRow>
-      </CCardHeader>
+    <div>
+      <PageHeader
+        title="Event Log"
+        subtitle="Raw honeytoken interaction stream"
+        actions={
+          <Button variant="outline" size="sm" onClick={exportLogs}>
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </Button>
+        }
+      />
 
-      <CCardBody>
-        <CRow className="mb-4 g-3">
-          <CCol md={4}>
-            <div className="search-box position-relative">
-              <CFormInput
-                type="text"
-                placeholder="Search logs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="ps-5"
-              />
-              <CIcon 
-                icon={cilSearch} 
-                className="position-absolute text-muted"
-                style={{ left: '1rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
-            </div>
-          </CCol>
-
-          <CCol md={3}>
-            <CFormSelect
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value)}
-            >
-              <option value="all">All Levels</option>
-              {Object.keys(logLevels).map(level => (
-                <option key={level} value={level}>
-                  {level.charAt(0).toUpperCase() + level.slice(1)}
-                </option>
-              ))}
-            </CFormSelect>
-          </CCol>
-
-          <CCol md={3}>
-            <CFormSelect
-              value={selectedTimeRange}
-              onChange={(e) => setSelectedTimeRange(e.target.value)}
-            >
-              {timeRanges.map(range => (
-                <option key={range.value} value={range.value}>
-                  {range.label}
-                </option>
-              ))}
-            </CFormSelect>
-          </CCol>
-
-          <CCol md={2}>
-            <CDropdown className="w-100">
-              <CDropdownToggle color="light" className="w-100">
-                <CIcon icon={cilFilter} className="me-2" />
-                Filters
-              </CDropdownToggle>
-              <CDropdownMenu>
-                <CDropdownItem>Filter by Source</CDropdownItem>
-                <CDropdownItem>Filter by IP</CDropdownItem>
-                <CDropdownItem>Custom Range</CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
-          </CCol>
-        </CRow>
-
-        {loading && (
-          <div className="text-center py-5">
-            <CSpinner color="primary" />
-          </div>
-        )}
-
-        {error && (
-          <CAlert color="danger" className="mb-4">
-            {error}
-          </CAlert>
-        )}
-
-        {!loading && !error && getFilteredLogs().length === 0 && (
-          <CAlert color="info" className="text-center">
-            No logs found matching your criteria
-          </CAlert>
-        )}
-
-        <div className="timeline-wrapper">
-          {!loading &&
-            !error &&
-            getFilteredLogs().map((log, index) => (
-              <div
-                key={index}
-                className="timeline-item p-3 mb-3 border rounded bg-white position-relative"
-                style={{
-                  marginLeft: '20px',
-                  borderLeft: `4px solid var(--cui-${logLevels[log.level]?.color || 'secondary'}) !important`,
-                }}
-              >
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <div className="d-flex align-items-center">
-                    {renderLogIcon(log.level)}
-                    <CBadge color={logLevels[log.level]?.color || 'secondary'} className="me-2">
-                      {log.level.toUpperCase()}
-                    </CBadge>
-                    <small className="text-muted">
-                      <CIcon icon={cilCalendar} className="me-1" />
-                      {format(new Date(log.timestamp), 'MMM dd, yyyy HH:mm:ss')}
-                    </small>
-                  </div>
-                  <div>
-                    <CBadge color="light" className="text-dark me-2">
-                      {log.source}
-                    </CBadge>
-                    <CBadge color="light" className="text-dark">
-                      {log.ip_address}
-                    </CBadge>
-                  </div>
-                </div>
-                <div className="ms-4 text-dark">{log.message}</div>
-              </div>
-            ))}
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search logs…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
         </div>
-      </CCardBody>
+        <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All levels</SelectItem>
+            {Object.keys(LOG_LEVELS).map((level) => (
+              <SelectItem key={level} value={level} className="capitalize">
+                {level}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_RANGES.map((range) => (
+              <SelectItem key={range.value} value={range.value}>
+                {range.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <style>
-        {`
-          .timeline-wrapper {
-            position: relative;
-          }
-          
-          .timeline-item {
-            transition: all 0.3s ease;
-          }
-          
-          .timeline-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          }
-          
-          .search-box input:focus {
-            box-shadow: 0 0 0 0.25rem rgba(50, 31, 219, 0.25);
-            border-color: #321fdb;
-          }
-        `}
-      </style>
-    </CCard>
-  )
-}
+      <AsyncBoundary
+        loading={loading}
+        error={error}
+        isEmpty={filteredLogs.length === 0}
+        emptyMessage="No logs found matching your criteria."
+      >
+        <div className="flex flex-col gap-2">
+          {filteredLogs.map((log, index) => {
+            const meta = LOG_LEVELS[log.level] || {
+              variant: "secondary",
+              icon: XCircle,
+            };
+            const Icon = meta.icon;
+            return (
+              <Card
+                key={index}
+                className="transition-colors hover:border-foreground/20"
+              >
+                <CardContent className="p-3">
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Badge variant={meta.variant} className="uppercase">
+                        {log.level}
+                      </Badge>
+                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {format(
+                          new Date(log.timestamp),
+                          "MMM dd, yyyy HH:mm:ss",
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Badge variant="outline" className="text-mono">
+                        {log.source}
+                      </Badge>
+                      <Badge variant="outline" className="text-mono">
+                        {log.ip_address}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="pl-5 text-xs text-foreground">
+                    {log.message}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </AsyncBoundary>
+    </div>
+  );
+};
 
-export default Logs
+export default Logs;

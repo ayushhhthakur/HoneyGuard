@@ -62,6 +62,20 @@ const AppHeader = () => {
           </CNavItem>
         </CHeaderNav>
         <CHeaderNav className="ms-auto">
+          <div className="nav-item d-none d-md-flex align-items-center">
+            <span className="hg-chip" data-tone="safe">
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--hg-safe)',
+                  animation: 'hg-blink-dot 2s ease-in-out infinite',
+                }}
+              />
+              Monitoring active
+            </span>
+          </div>
           <div className="nav-item">
             <OrgSwitcher />
           </div>

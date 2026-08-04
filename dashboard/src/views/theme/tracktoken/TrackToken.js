@@ -1,306 +1,268 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
-import API_URL from '../../../config/api.js'
+import React, { useState, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Copy, Loader2 } from "lucide-react";
+import API_URL from "@/config/api.js";
+import { tokensApi } from "@/api/tokens.api";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CTable,
-  CTableHead,
-  CTableRow,
-  CTableHeaderCell,
-  CTableBody,
-  CTableDataCell,
-  CSpinner,
-  CAlert,
-  CBadge,
-  CRow,
-  CCol,
-  CListGroup,
-  CListGroupItem,
-  CLink,
-  CButtonGroup,
-  CButton,
-} from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilCopy } from '@coreui/icons';
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import { ErrorState, EmptyState } from "@/components/ui/AsyncStates";
+
+const InfoRow = ({ label, value }) => (
+  <>
+    <div className="flex items-center justify-between px-4 py-2.5 text-xs">
+      <span className="font-medium text-foreground/80">{label}</span>
+      <span className="text-right text-muted-foreground">{value ?? "N/A"}</span>
+    </div>
+    <Separator />
+  </>
+);
+
+InfoRow.propTypes = {
+  label: PropTypes.node.isRequired,
+  value: PropTypes.node,
+};
+
+const STATUS_VARIANT = {
+  success: "success",
+  error: "destructive",
+  warning: "warning",
+  info: "default",
+};
 
 const TrackToken = () => {
   const { token } = useParams();
-  const navigate = useNavigate(); // Fix: Call useNavigate as a function
+  const navigate = useNavigate();
   const [tokenData, setTokenData] = useState(null);
-  const [stats, setStats] = useState([]); // Ensure it's always an array
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
- 
 
-  
   useEffect(() => {
-    // Replace the hardcoded URLs with API_URL
     const fetchTokenData = async () => {
       try {
-        const tokenResponse = await axios.get(`${API_URL}/tokens/id/${token}`);
-        if (tokenResponse.data.success) {
-          setTokenData(tokenResponse.data.data);
-        } else {
-          setError(tokenResponse.data.error || 'Failed to fetch token data');
-        }
+        const tokenResponse = await tokensApi.getByValue(token);
+        if (tokenResponse.data.success) setTokenData(tokenResponse.data.data);
+        else setError(tokenResponse.data.error || "Failed to fetch token data");
 
-        // Fetch token logs
-        const logsResponse = await axios.get(`${API_URL}/tokens/${token}/logs`);
-        if (logsResponse.data.success) {
-          setStats(Array.isArray(logsResponse.data.data) ? logsResponse.data.data : []);
-        } else {
-          setError(logsResponse.data.error || 'Failed to fetch token logs');
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Failed to fetch data');
+        const logsResponse = await tokensApi.getLogs(token);
+        if (logsResponse.data.success)
+          setLogs(
+            Array.isArray(logsResponse.data.data) ? logsResponse.data.data : [],
+          );
+        else setError(logsResponse.data.error || "Failed to fetch token logs");
+      } catch (err) {
+        setError(
+          err.response?.data?.error || err.message || "Failed to fetch data",
+        );
       } finally {
         setLoading(false);
       }
     };
-
     fetchTokenData();
   }, [token]);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  const getStatusColor = (status) => {
-    const statusColors = {
-      success: 'success',
-      error: 'danger',
-      warning: 'warning',
-      info: 'info',
-    };
-    return statusColors[status.toLowerCase()] || 'info';
-  };
+  const formatDate = (dateString) => new Date(dateString).toLocaleString();
 
   const copyToClipboard = useCallback((text) => {
     navigator.clipboard.writeText(text);
-    alert('Copied to clipboard!');
+    toast.success("Copied to clipboard!");
   }, []);
 
   const getImageTrackingUrl = useCallback(
-    (tokenValue) => `${API_URL.replace(/\/$/, '')}/image/${tokenValue}`,
-    []
+    (tokenValue) => `${API_URL.replace(/\/$/, "")}/image/${tokenValue}`,
+    [],
   );
 
-  const redirectToStats = useCallback(() => {
-    navigate(`/utils/track/stats/${token}`);
-  }, [navigate, token]);
+  const redirectToStats = useCallback(
+    () => navigate(`/utils/track/stats/${token}`),
+    [navigate, token],
+  );
 
   if (loading) {
     return (
-      <div className="text-center p-3">
-        <CSpinner color="primary" />
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <CAlert color="danger" className="mb-4">
-        {error}
-      </CAlert>
-    );
-  }
+  if (error) return <ErrorState message={error} />;
 
   return (
-    <CRow>
-      {/* Token Metadata Card */}
-      <CCol xs={12} className="mb-4">
-        <CCard>
-          <CCardHeader>
-            <h4 className="mb-0">Token Information</h4>
-          </CCardHeader>
-          <CCardBody>
-            <CListGroup flush>
-              <CListGroupItem>
-                <div className="d-flex justify-content-between align-items-center">
-                  <strong>Token:</strong>
-                  <div className="d-flex align-items-center">
-                    <CLink className="me-2">
-                      {token}
-                    </CLink>
-                  </div>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="normal-case tracking-normal text-foreground">
+            Token Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <InfoRow
+            label="Token"
+            value={<code className="text-mono">{token}</code>}
+          />
+
+          {tokenData?.category === "image" && (
+            <>
+              <div className="flex items-center justify-between px-4 py-2.5 text-xs">
+                <span className="font-medium text-foreground/80">
+                  Image URL
+                </span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={getImageTrackingUrl(token)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    View Image
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(getImageTrackingUrl(token))}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              </CListGroupItem>
+              </div>
+              <Separator />
+              <InfoRow label="Filename" value={tokenData?.filename} />
+              <InfoRow label="Mimetype" value={tokenData?.mimetype} />
+              <InfoRow
+                label="Size"
+                value={tokenData?.size ? `${tokenData.size} bytes` : undefined}
+              />
+            </>
+          )}
 
-              {tokenData?.category === 'image' && (
-                <>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <strong>Image URL:</strong>
-                      <div className="d-flex align-items-center">
-                        <CLink href={getImageTrackingUrl(token)} target="_blank" className="me-2">
-                          View Image
-                        </CLink>
-                        <button
-                          onClick={() => copyToClipboard(getImageTrackingUrl(token))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                        >
-                          <CIcon icon={cilCopy} />
-                        </button>
-                      </div>
-                    </div>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>Filename:</strong>
-                      <span>{tokenData?.filename}</span>
-                    </div>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>Mimetype:</strong>
-                      <span>{tokenData?.mimetype}</span>
-                    </div>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>Size:</strong>
-                      <span>{tokenData?.size} bytes</span>
-                    </div>
-                  </CListGroupItem>
-                </>
-              )}
+          {tokenData?.category === "aws" && (
+            <>
+              <InfoRow
+                label="AWS Region"
+                value={tokenData?.metadata?.region || "N/A"}
+              />
+              <InfoRow
+                label="AWS Service"
+                value={tokenData?.metadata?.service || "N/A"}
+              />
+            </>
+          )}
 
-              {tokenData?.category === 'aws' && (
-                <>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>AWS Region:</strong>
-                      <span>{tokenData?.metadata?.region || 'N/A'}</span>
-                    </div>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>AWS Service:</strong>
-                      <span>{tokenData?.metadata?.service || 'N/A'}</span>
-                    </div>
-                  </CListGroupItem>
-                </>
-              )}
+          {tokenData?.category === "financial" && (
+            <InfoRow
+              label="Financial Type"
+              value={tokenData?.metadata?.type || "N/A"}
+            />
+          )}
 
-              {tokenData?.category === 'financial' && (
-                <CListGroupItem>
-                  <div className="d-flex justify-content-between">
-                    <strong>Financial Type:</strong>
-                    <span>{tokenData?.metadata?.type || 'N/A'}</span>
-                  </div>
-                </CListGroupItem>
-              )}
+          {tokenData?.category === "healthcare" && (
+            <>
+              <InfoRow
+                label="Healthcare System"
+                value={tokenData?.metadata?.system || "N/A"}
+              />
+              <InfoRow
+                label="Patient ID Format"
+                value={tokenData?.metadata?.patientIdFormat || "N/A"}
+              />
+            </>
+          )}
 
-              {tokenData?.category === 'healthcare' && (
-                <>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>Healthcare System:</strong>
-                      <span>{tokenData?.metadata?.system || 'N/A'}</span>
-                    </div>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <div className="d-flex justify-content-between">
-                      <strong>Patient ID Format:</strong>
-                      <span>{tokenData?.metadata?.patientIdFormat || 'N/A'}</span>
-                    </div>
-                  </CListGroupItem>
-                </>
-              )}
+          <div className="flex items-center justify-between px-4 py-2.5 text-xs">
+            <span className="font-medium text-foreground/80">Status</span>
+            <Badge variant={tokenData?.is_active ? "success" : "destructive"}>
+              {tokenData?.is_active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+          <Separator />
+          <InfoRow
+            label="Created At"
+            value={
+              tokenData?.created_at ? formatDate(tokenData.created_at) : "N/A"
+            }
+          />
+        </CardContent>
+      </Card>
 
-              <CListGroupItem>
-                <div className="d-flex justify-content-between align-items-center">
-                  <strong>Status:</strong>
-                  <CBadge color={tokenData?.is_active ? 'success' : 'danger'}>
-                    {tokenData?.is_active ? 'Active' : 'Inactive'}
-                  </CBadge>
-                </div>
-              </CListGroupItem>
-
-              <CListGroupItem>
-                <div className="d-flex justify-content-between">
-                  <strong>Created At:</strong>
-                  <span>{formatDate(tokenData?.created_at)}</span>
-                </div>
-              </CListGroupItem>
-            </CListGroup>
-          </CCardBody>
-        </CCard>
-      </CCol>
-
-      {/* Token Logs Card */}
-      <CCol xs={12}>
-        <CCard className="mb-4">
-          <CCardHeader>
-            <h4 className="mb-0">Token Activity Logs</h4>
-          </CCardHeader>
-          <CCardBody>
-            {stats.length === 0 ? (
-              <CAlert color="info" className="mb-0">
-                No logs found for this token.
-              </CAlert>
-            ) : (
-              <CTable hover responsive align="middle" className="mb-0">
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>Timestamp</CTableHeaderCell>
-                    <CTableHeaderCell>Event</CTableHeaderCell>
-                    <CTableHeaderCell>Status</CTableHeaderCell>
-                    <CTableHeaderCell>IP Address</CTableHeaderCell>
-                    <CTableHeaderCell>OS</CTableHeaderCell>
-                    <CTableHeaderCell>Browser</CTableHeaderCell>
-                    <CTableHeaderCell>Device</CTableHeaderCell>
-                    <CTableHeaderCell>Country</CTableHeaderCell>
-                    <CTableHeaderCell>Region</CTableHeaderCell>
-                    <CTableHeaderCell>City</CTableHeaderCell>
-                    <CTableHeaderCell>Timezone</CTableHeaderCell>
-                    <CTableHeaderCell>ISP</CTableHeaderCell>
-                    <CTableHeaderCell>Token</CTableHeaderCell>
-                    <CTableHeaderCell>User Agent</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {stats.map((stat, index) => (
-                    <CTableRow key={index}>
-                      <CTableDataCell>{formatDate(stat.timestamp)}</CTableDataCell>
-                      <CTableDataCell>{stat.event}</CTableDataCell>
-                      <CTableDataCell>
-                        <CBadge color={getStatusColor(stat.status)}>
-                          {stat.status}
-                        </CBadge>
-                      </CTableDataCell>
-                      <CTableDataCell>{stat.ip_address}</CTableDataCell>
-                      <CTableDataCell>{stat.os}</CTableDataCell>
-                      <CTableDataCell>{stat.browser}</CTableDataCell>
-                      <CTableDataCell>{stat.device}</CTableDataCell>
-                      <CTableDataCell>{stat.country}</CTableDataCell>
-                      <CTableDataCell>{stat.region}</CTableDataCell>
-                      <CTableDataCell>{stat.city}</CTableDataCell>
-                      <CTableDataCell>{stat.timezone}</CTableDataCell>
-                      <CTableDataCell>{stat.isp}</CTableDataCell>
-                      <CTableDataCell>{stat.token}</CTableDataCell>
-                      <CTableDataCell>
-                        <CButtonGroup>
-                          <CButton
-                            color="primary"
-                            onClick={redirectToStats}
-                          >View</CButton>
-                        </CButtonGroup>
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            )}
-          </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
+      <Card>
+        <CardHeader>
+          <CardTitle className="normal-case tracking-normal text-foreground">
+            Token Activity Logs
+          </CardTitle>
+        </CardHeader>
+        <CardContent className={logs.length === 0 ? undefined : "p-0"}>
+          {logs.length === 0 ? (
+            <EmptyState>No logs found for this token.</EmptyState>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>OS</TableHead>
+                  <TableHead>Browser</TableHead>
+                  <TableHead>Device</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>City</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.map((stat, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{formatDate(stat.timestamp)}</TableCell>
+                    <TableCell>{stat.event}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          STATUS_VARIANT[String(stat.status).toLowerCase()] ||
+                          "default"
+                        }
+                        className="uppercase"
+                      >
+                        {stat.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-mono">
+                      {stat.ip_address}
+                    </TableCell>
+                    <TableCell>{stat.os}</TableCell>
+                    <TableCell>{stat.browser}</TableCell>
+                    <TableCell>{stat.device}</TableCell>
+                    <TableCell>{stat.country}</TableCell>
+                    <TableCell>{stat.city}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={redirectToStats}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

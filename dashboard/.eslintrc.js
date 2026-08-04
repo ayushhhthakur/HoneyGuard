@@ -21,4 +21,16 @@ module.exports = {
     // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs
     // e.g. "@typescript-eslint/explicit-function-return-type": "off",
   },
+  overrides: [
+    {
+      // shadcn/ui primitives are thin pass-through wrappers around Radix
+      // components (normally used with TypeScript, where Radix's own prop
+      // types cover this) — exhaustive PropTypes here would just restate
+      // Radix's API surface for no real safety benefit.
+      files: ['src/components/ui/**/*.js'],
+      rules: {
+        'react/prop-types': 'off',
+      },
+    },
+  ],
 }

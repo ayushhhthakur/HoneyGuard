@@ -1,126 +1,155 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import axios from 'axios'
-import { toast } from 'react-toastify'
-import './Dashboard.css'
+import React from "react";
+import { RefreshCw } from "lucide-react";
 
-import { CButton, CCard, CCardBody, CCardFooter, CCol, CRow, CSpinner, CTooltip } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import { cilReload, cilChart, cilFingerprint, cilBell, cilPeople, cilDevices } from '@coreui/icons'
+import { statsApi } from "@/api/stats.api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAsync } from "@/hooks/useAsync";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
+import { Button } from "@/components/ui/button";
 
-import WidgetsDropdown from '../widgets/WidgetsDropdown'
-import MainChart from './MainChart'
-import API_URL from '../../config/api'
-import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabaseClient'
+import MainChart from "./MainChart";
+import ThreatScoreWidget from "./widgets/ThreatScoreWidget";
+import ActiveIncidentsWidget from "./widgets/ActiveIncidentsWidget";
+import HoneytokensWidget from "./widgets/HoneytokensWidget";
+import LiveEventsWidget from "./widgets/LiveEventsWidget";
+import AttackTimelineWidget from "./widgets/AttackTimelineWidget";
+import WorldMapWidget from "./widgets/WorldMapWidget";
+import MitreAttackWidget from "./widgets/MitreAttackWidget";
+import TokenCategoriesWidget from "./widgets/TokenCategoriesWidget";
+import HighRiskCountriesWidget from "./widgets/HighRiskCountriesWidget";
+import RecentActivityWidget from "./widgets/RecentActivityWidget";
 
 const Dashboard = () => {
-  const { activeOrg } = useAuth()
-  const [summary, setSummary] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { activeOrg } = useAuth();
 
-  const load = useCallback(async () => {
-    if (!activeOrg) return
-    try {
-      const { data } = await axios.get(`${API_URL}/stats/summary`)
-      setSummary(data.data)
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to load dashboard summary')
-    } finally {
-      setLoading(false)
-    }
-  }, [activeOrg])
+  const {
+    data: bundle,
+    loading,
+    reload,
+    setData,
+  } = useAsync(() => statsApi.dashboard(), [activeOrg?.id], {
+    enabled: Boolean(activeOrg),
+  });
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  // Live counters: bump the relevant tile instantly instead of waiting for
-  // the next poll, whenever a token/log/alert/fingerprint lands for this org.
-  useEffect(() => {
-    if (!activeOrg) return
-    const channel = supabase
-      .channel(`dashboard-${activeOrg.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tokens', filter: `org_id=eq.${activeOrg.id}` }, () =>
-        setSummary((s) => (s ? { ...s, total_tokens: s.total_tokens + 1 } : s)),
-      )
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'token_logs', filter: `org_id=eq.${activeOrg.id}` }, () =>
-        setSummary((s) => (s ? { ...s, total_logs: s.total_logs + 1 } : s)),
-      )
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts', filter: `org_id=eq.${activeOrg.id}` }, () =>
-        setSummary((s) => (s ? { ...s, open_alerts: s.open_alerts + 1 } : s)),
-      )
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [activeOrg])
-
-  const tiles = summary
-    ? [
-        { title: 'Total Tokens', value: summary.total_tokens, icon: cilFingerprint, color: 'info', href: '#/utils/Tokens' },
-        { title: 'Total Log Events', value: summary.total_logs, icon: cilChart, color: 'success', href: '#/utils/logs' },
-        { title: 'Open Alerts', value: summary.open_alerts, icon: cilBell, color: summary.open_alerts > 0 ? 'danger' : 'secondary', href: '#/alerts' },
-        { title: 'Recent Unique Attackers', value: summary.unique_attackers_recent, icon: cilPeople, color: 'warning', href: '#/utils/maps' },
-      ]
-    : []
+  // Live counters on the summary tiles — bump instantly on realtime insert
+  // instead of waiting for the next full reload.
+  useRealtimeChannel(
+    activeOrg ? `dashboard-summary-${activeOrg.id}` : null,
+    [
+      {
+        event: "INSERT",
+        table: "tokens",
+        filter: activeOrg ? `org_id=eq.${activeOrg.id}` : undefined,
+        onEvent: () =>
+          setData((b) =>
+            b
+              ? {
+                  ...b,
+                  summary: {
+                    ...b.summary,
+                    total_tokens: b.summary.total_tokens + 1,
+                  },
+                }
+              : b,
+          ),
+      },
+      {
+        event: "INSERT",
+        table: "token_logs",
+        filter: activeOrg ? `org_id=eq.${activeOrg.id}` : undefined,
+        onEvent: () =>
+          setData((b) =>
+            b
+              ? {
+                  ...b,
+                  summary: {
+                    ...b.summary,
+                    total_logs: b.summary.total_logs + 1,
+                  },
+                }
+              : b,
+          ),
+      },
+      {
+        event: "INSERT",
+        table: "alerts",
+        filter: activeOrg ? `org_id=eq.${activeOrg.id}` : undefined,
+        onEvent: () =>
+          setData((b) =>
+            b
+              ? {
+                  ...b,
+                  summary: {
+                    ...b.summary,
+                    open_alerts: b.summary.open_alerts + 1,
+                  },
+                }
+              : b,
+          ),
+      },
+    ],
+    { enabled: Boolean(activeOrg) },
+  );
 
   return (
-    <>
-      <WidgetsDropdown className="mb-4" />
-
-      {loading ? (
-        <div className="text-center py-4">
-          <CSpinner color="warning" />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Security Operations Overview
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {activeOrg?.name} &middot; live signal from your deployed
+            honeytokens
+          </p>
         </div>
-      ) : (
-        <CRow className="mb-4 g-4">
-          {tiles.map((tile) => (
-            <CCol sm={6} lg={3} key={tile.title}>
-              <a href={tile.href} className="text-decoration-none">
-                <CCard className="h-100 shadow-sm">
-                  <CCardBody className="d-flex align-items-center justify-content-between">
-                    <div>
-                      <div className="text-body-secondary small">{tile.title}</div>
-                      <div className="fs-3 fw-bold">{tile.value}</div>
-                    </div>
-                    <CIcon icon={tile.icon} size="xl" className={`text-${tile.color}`} />
-                  </CCardBody>
-                </CCard>
-              </a>
-            </CCol>
-          ))}
-        </CRow>
-      )}
+        <Button variant="outline" size="icon" onClick={reload} title="Refresh">
+          <RefreshCw className="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
-      <CCard className="mb-4 shadow-sm">
-        <CCardBody>
-          <CRow>
-            <CCol sm={8}>
-              <h4 id="traffic" className="card-title mb-0 d-flex align-items-center">
-                <CIcon icon={cilChart} className="me-2" />
-                Honeytoken activity
-              </h4>
-              <div className="small text-body-secondary">Live — updates as tokens are created and triggered</div>
-            </CCol>
-            <CCol sm={4} className="d-none d-md-block text-end">
-              <CTooltip content="Refresh now">
-                <CButton color="primary" variant="outline" onClick={load}>
-                  <CIcon icon={cilReload} />
-                </CButton>
-              </CTooltip>
-            </CCol>
-          </CRow>
-          <MainChart />
-        </CCardBody>
-        <CCardFooter className="bg-transparent d-flex justify-content-between text-body-secondary small">
-          <span>
-            <CIcon icon={cilDevices} className="me-1" />
-            Want deeper attacker signal? Check the{' '}
-            <a href="#/fingerprints">Fingerprints</a> page.
-          </span>
-          <span>Organization: {activeOrg?.name}</span>
-        </CCardFooter>
-      </CCard>
-    </>
-  )
-}
+      {/* Row 1 — headline metrics */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <ThreatScoreWidget threat={bundle?.threat} loading={loading} />
+        <ActiveIncidentsWidget
+          count={bundle?.summary?.open_alerts}
+          loading={loading}
+        />
+        <HoneytokensWidget
+          total={bundle?.summary?.total_tokens}
+          logs={bundle?.summary?.total_logs}
+          loading={loading}
+        />
+        <div className="sm:col-span-2 xl:col-span-1">
+          <MainChart compact />
+        </div>
+      </div>
 
-export default Dashboard
+      {/* Row 2 — live feeds + spatial context */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <LiveEventsWidget
+          initialEvents={bundle?.recentEvents}
+          loading={loading}
+        />
+        <AttackTimelineWidget events={bundle?.recentEvents} loading={loading} />
+        <WorldMapWidget />
+      </div>
+
+      {/* Row 3 — intelligence breakdowns */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MitreAttackWidget mitre={bundle?.mitre} loading={loading} />
+        <TokenCategoriesWidget
+          categories={bundle?.categories}
+          loading={loading}
+        />
+        <HighRiskCountriesWidget
+          countries={bundle?.countries}
+          loading={loading}
+        />
+        <RecentActivityWidget events={bundle?.recentEvents} loading={loading} />
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

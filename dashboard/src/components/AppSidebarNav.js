@@ -38,6 +38,7 @@ export const AppSidebarNav = ({ items }) => {
             {...(rest.to && { as: NavLink })}
             {...(rest.href && { target: '_blank', rel: 'noopener noreferrer' })}
             {...rest}
+            className="hg-nav-link"
           >
             {navLink(name, icon, badge, indent)}
           </CNavLink>

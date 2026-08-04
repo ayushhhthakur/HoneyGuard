@@ -1,125 +1,156 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import React, { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { fingerprintsApi } from "@/api/fingerprints.api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
+import { AsyncBoundary } from "@/components/ui/AsyncStates";
 import {
-  CBadge,
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CCol,
-  CRow,
-  CSpinner,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-  CTooltip,
-  CButton,
-} from '@coreui/react'
-import API_URL from '../../config/api'
-import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabaseClient'
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 const Fingerprints = () => {
-  const { activeOrg } = useAuth()
-  const navigate = useNavigate()
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { activeOrg } = useAuth();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!activeOrg) return
-    setLoading(true)
-    axios
-      .get(`${API_URL}/fingerprints`)
+  const load = useCallback(() => {
+    if (!activeOrg) return;
+    setLoading(true);
+    setError(null);
+    fingerprintsApi
+      .list()
       .then(({ data }) => setRows(data.data))
-      .catch((err) => toast.error(err.response?.data?.error || 'Failed to load fingerprints'))
-      .finally(() => setLoading(false))
-  }, [activeOrg])
+      .catch((err) =>
+        setError(err.response?.data?.error || "Failed to load fingerprints"),
+      )
+      .finally(() => setLoading(false));
+  }, [activeOrg]);
 
   useEffect(() => {
-    if (!activeOrg) return
-    const channel = supabase
-      .channel(`fingerprints-${activeOrg.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'device_fingerprints', filter: `org_id=eq.${activeOrg.id}` },
-        (payload) => setRows((prev) => [payload.new, ...prev]),
-      )
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [activeOrg])
+    load();
+  }, [load]);
+
+  useRealtimeChannel(
+    activeOrg ? `fingerprints-${activeOrg.id}` : null,
+    [
+      {
+        event: "INSERT",
+        table: "device_fingerprints",
+        filter: activeOrg ? `org_id=eq.${activeOrg.id}` : undefined,
+        onEvent: (payload) => setRows((prev) => [payload.new, ...prev]),
+      },
+    ],
+    { enabled: Boolean(activeOrg) },
+  );
 
   return (
-    <CRow>
-      <CCol xs={12}>
-        <CCard>
-          <CCardHeader>
-            <strong>Device fingerprints</strong>{' '}
-            <span className="text-body-secondary">— deep client signals captured when a honeytoken is touched</span>
-          </CCardHeader>
-          <CCardBody>
-            {loading ? (
-              <CSpinner color="warning" />
-            ) : rows.length === 0 ? (
-              <p className="text-body-secondary mb-0">
-                No fingerprints captured yet. They show up here as soon as someone opens a honeytoken
-                that embeds the collector script (<code>/fp.js</code>).
-              </p>
-            ) : (
-              <CTable hover responsive small>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>Token</CTableHeaderCell>
-                    <CTableHeaderCell>IP</CTableHeaderCell>
-                    <CTableHeaderCell>Platform</CTableHeaderCell>
-                    <CTableHeaderCell>Screen</CTableHeaderCell>
-                    <CTableHeaderCell>Timezone</CTableHeaderCell>
-                    <CTableHeaderCell>Fonts</CTableHeaderCell>
-                    <CTableHeaderCell>Flags</CTableHeaderCell>
-                    <CTableHeaderCell>Time</CTableHeaderCell>
-                    <CTableHeaderCell>Preview</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {rows.map((r) => (
-                    <CTableRow key={r.id}>
-                      <CTableDataCell>
-                        <code>{r.token}</code>
-                      </CTableDataCell>
-                      <CTableDataCell>{r.ip_address}</CTableDataCell>
-                      <CTableDataCell>{r.platform}</CTableDataCell>
-                      <CTableDataCell>
-                        {r.screen_resolution} @{r.pixel_ratio}x
-                      </CTableDataCell>
-                      <CTableDataCell>{r.timezone}</CTableDataCell>
-                      <CTableDataCell>
-                        <CTooltip content={(r.fonts || []).join(', ') || 'none detected'}>
-                          <span>{(r.fonts || []).length} detected</span>
-                        </CTooltip>
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        {r.webdriver && <CBadge color="danger" className="me-1">webdriver</CBadge>}
-                        {r.incognito_guess && <CBadge color="secondary">private?</CBadge>}
-                      </CTableDataCell>
-                      <CTableDataCell>{new Date(r.created_at).toLocaleString()}</CTableDataCell>
-                      <CTableDataCell>
-                        <CButton color="warning" variant="outline" size="sm" onClick={() => navigate(`/fingerprints/${r.id}`)}>
-                          View details
-                        </CButton>
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            )}
-          </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
-  )
-}
+    <Card>
+      <CardHeader>
+        <CardTitle className="normal-case text-sm font-semibold tracking-normal text-foreground">
+          Device fingerprints
+        </CardTitle>
+        <CardDescription>
+          Deep client signals captured when a honeytoken is touched
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <AsyncBoundary
+          loading={loading}
+          error={error}
+          isEmpty={rows.length === 0}
+          emptyMessage={
+            <>
+              No fingerprints captured yet. They show up here as soon as someone
+              opens a honeytoken that embeds the collector script (
+              <code>/fp.js</code>).
+            </>
+          }
+        >
+          <TooltipProvider>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Token</TableHead>
+                  <TableHead>IP</TableHead>
+                  <TableHead>Platform</TableHead>
+                  <TableHead>Screen</TableHead>
+                  <TableHead>Timezone</TableHead>
+                  <TableHead>Fonts</TableHead>
+                  <TableHead>Flags</TableHead>
+                  <TableHead>Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>
+                      <Link
+                        to={`/fingerprints/${r.id}`}
+                        className="text-primary hover:underline"
+                      >
+                        <code className="text-mono">{r.token}</code>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-mono">{r.ip_address}</TableCell>
+                    <TableCell>{r.platform}</TableCell>
+                    <TableCell>
+                      {r.screen_resolution} @{r.pixel_ratio}x
+                    </TableCell>
+                    <TableCell>{r.timezone}</TableCell>
+                    <TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-default">
+                            {(r.fonts || []).length} detected
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {(r.fonts || []).join(", ") || "none detected"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {r.webdriver && (
+                          <Badge variant="destructive">webdriver</Badge>
+                        )}
+                        {r.incognito_guess && (
+                          <Badge variant="secondary">private?</Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(r.created_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </AsyncBoundary>
+      </CardContent>
+    </Card>
+  );
+};
 
-export default Fingerprints
+export default Fingerprints;

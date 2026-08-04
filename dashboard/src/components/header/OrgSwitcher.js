@@ -1,43 +1,73 @@
-import React from 'react'
-import { CDropdown, CDropdownItem, CDropdownMenu, CDropdownToggle, CBadge } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import { cilBuilding, cilPlus } from '@coreui/icons'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { Building2, Plus, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
-const ROLE_COLORS = { owner: 'warning', admin: 'info', analyst: 'success', viewer: 'secondary' }
+const ROLE_VARIANT = {
+  owner: "warning",
+  admin: "default",
+  analyst: "success",
+  viewer: "secondary",
+};
 
-const OrgSwitcher = () => {
-  const { organizations, activeOrg, switchOrg } = useAuth()
-  const navigate = useNavigate()
+export const OrgSwitcher = () => {
+  const { organizations, activeOrg, switchOrg } = useAuth();
+  const navigate = useNavigate();
 
-  if (!activeOrg) return null
+  if (!activeOrg) return null;
 
   return (
-    <CDropdown variant="nav-item">
-      <CDropdownToggle caret={false} className="d-flex align-items-center gap-2">
-        <CIcon icon={cilBuilding} />
-        <span className="d-none d-md-inline">{activeOrg.name}</span>
-        <CBadge color={ROLE_COLORS[activeOrg.role]}>{activeOrg.role}</CBadge>
-      </CDropdownToggle>
-      <CDropdownMenu>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="max-w-[180px] justify-between font-normal"
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate">{activeOrg.name}</span>
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+        <DropdownMenuSeparator />
         {organizations.map((org) => (
-          <CDropdownItem
+          <DropdownMenuItem
             key={org.id}
-            active={org.id === activeOrg.id}
-            style={{ cursor: 'pointer' }}
             onClick={() => switchOrg(org.id)}
+            className="justify-between"
           >
-            {org.name} <CBadge color={ROLE_COLORS[org.role]}>{org.role}</CBadge>
-          </CDropdownItem>
+            <span className="flex items-center gap-2 truncate">
+              {org.id === activeOrg.id && (
+                <Check className="h-3.5 w-3.5 text-primary" />
+              )}
+              <span className={org.id === activeOrg.id ? "font-medium" : ""}>
+                {org.name}
+              </span>
+            </span>
+            <Badge variant={ROLE_VARIANT[org.role]}>{org.role}</Badge>
+          </DropdownMenuItem>
         ))}
-        <CDropdownItem style={{ cursor: 'pointer' }} onClick={() => navigate('/create-org')}>
-          <CIcon icon={cilPlus} className="me-2" />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate("/create-org")}>
+          <Plus className="h-3.5 w-3.5" />
           New organization
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
-  )
-}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
-export default OrgSwitcher
+export default OrgSwitcher;

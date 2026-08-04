@@ -1,258 +1,312 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import axios from 'axios'
-import { toast } from 'react-toastify'
+import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { UserPlus, Trash2, Loader2 } from "lucide-react";
+import { orgsApi } from "@/api/orgs.api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/hooks/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { AsyncBoundary } from "@/components/ui/AsyncStates";
+import { ROLE_COLORS, ROLES, INVITABLE_ROLES } from "@/constants/badges";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  CBadge,
-  CButton,
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CCol,
-  CForm,
-  CFormInput,
-  CFormSelect,
-  CModal,
-  CModalBody,
-  CModalFooter,
-  CModalHeader,
-  CModalTitle,
-  CRow,
-  CSpinner,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-} from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import { cilUserPlus, cilTrash } from '@coreui/icons'
-import API_URL from '../../config/api'
-import { useAuth } from '../../contexts/AuthContext'
-
-const ROLE_COLORS = { owner: 'warning', admin: 'info', analyst: 'success', viewer: 'secondary' }
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const Team = () => {
-  const { activeOrg, isAtLeast, profile } = useAuth()
-  const [members, setMembers] = useState([])
-  const [invites, setInvites] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [inviteModal, setInviteModal] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState('viewer')
-  const [submitting, setSubmitting] = useState(false)
+  const { activeOrg, isAtLeast, profile } = useAuth();
+  const confirm = useConfirm();
+  const [members, setMembers] = useState([]);
+  const [invites, setInvites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [inviteModal, setInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("viewer");
+  const [submitting, setSubmitting] = useState(false);
 
-  const canManage = isAtLeast('admin')
+  const canManage = isAtLeast("admin");
 
   const load = useCallback(async () => {
-    if (!activeOrg) return
-    setLoading(true)
+    if (!activeOrg) return;
+    setLoading(true);
+    setError(null);
     try {
       const [membersRes, invitesRes] = await Promise.all([
-        axios.get(`${API_URL}/orgs/${activeOrg.id}/members`),
+        orgsApi.listMembers(activeOrg.id),
         canManage
-          ? axios.get(`${API_URL}/orgs/${activeOrg.id}/invites`)
+          ? orgsApi.listInvites(activeOrg.id)
           : Promise.resolve({ data: { data: [] } }),
-      ])
-      setMembers(membersRes.data.data)
-      setInvites(invitesRes.data.data)
+      ]);
+      setMembers(membersRes.data.data);
+      setInvites(invitesRes.data.data);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to load team')
+      setError(err.response?.data?.error || "Failed to load team");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [activeOrg, canManage])
+  }, [activeOrg, canManage]);
 
   useEffect(() => {
-    load()
-  }, [load])
+    load();
+  }, [load]);
 
   const handleInvite = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
+    e.preventDefault();
+    setSubmitting(true);
     try {
-      await axios.post(`${API_URL}/orgs/${activeOrg.id}/invites`, { email: inviteEmail, role: inviteRole })
-      toast.success(`Invite sent to ${inviteEmail}`)
-      setInviteModal(false)
-      setInviteEmail('')
-      setInviteRole('viewer')
-      load()
+      await orgsApi.createInvite(activeOrg.id, inviteEmail, inviteRole);
+      toast.success(`Invite sent to ${inviteEmail}`);
+      setInviteModal(false);
+      setInviteEmail("");
+      setInviteRole("viewer");
+      load();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to send invite')
+      toast.error(err.response?.data?.error || "Failed to send invite");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleRoleChange = async (userId, role) => {
     try {
-      await axios.patch(`${API_URL}/orgs/${activeOrg.id}/members/${userId}`, { role })
-      toast.success('Role updated')
-      load()
+      await orgsApi.changeMemberRole(activeOrg.id, userId, role);
+      toast.success("Role updated");
+      load();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to update role')
+      toast.error(err.response?.data?.error || "Failed to update role");
     }
-  }
+  };
 
   const handleRemove = async (userId) => {
-    if (!window.confirm('Remove this member from the organization?')) return
+    if (!(await confirm("Remove this member from the organization?"))) return;
     try {
-      await axios.delete(`${API_URL}/orgs/${activeOrg.id}/members/${userId}`)
-      toast.success('Member removed')
-      load()
+      await orgsApi.removeMember(activeOrg.id, userId);
+      toast.success("Member removed");
+      load();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to remove member')
+      toast.error(err.response?.data?.error || "Failed to remove member");
     }
-  }
+  };
 
   const handleRevokeInvite = async (inviteId) => {
     try {
-      await axios.delete(`${API_URL}/orgs/${activeOrg.id}/invites/${inviteId}`)
-      toast.success('Invite revoked')
-      load()
+      await orgsApi.revokeInvite(activeOrg.id, inviteId);
+      toast.success("Invite revoked");
+      load();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to revoke invite')
+      toast.error(err.response?.data?.error || "Failed to revoke invite");
     }
-  }
+  };
 
-  if (!activeOrg) return <CSpinner color="warning" />
+  if (!activeOrg)
+    return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
 
   return (
-    <CRow>
-      <CCol xs={12}>
-        <CCard className="mb-4">
-          <CCardHeader className="d-flex justify-content-between align-items-center">
-            <div>
-              <strong>{activeOrg.name}</strong> — Team members
-            </div>
-            {canManage && (
-              <CButton color="warning" size="sm" onClick={() => setInviteModal(true)}>
-                <CIcon icon={cilUserPlus} className="me-1" /> Invite teammate
-              </CButton>
-            )}
-          </CCardHeader>
-          <CCardBody>
-            {loading ? (
-              <CSpinner color="warning" />
-            ) : (
-              <CTable hover responsive>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>Name</CTableHeaderCell>
-                    <CTableHeaderCell>Email</CTableHeaderCell>
-                    <CTableHeaderCell>Role</CTableHeaderCell>
-                    <CTableHeaderCell>Joined</CTableHeaderCell>
-                    {canManage && <CTableHeaderCell></CTableHeaderCell>}
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {members.map((m) => (
-                    <CTableRow key={m.id}>
-                      <CTableDataCell>{m.profiles?.full_name || '—'}</CTableDataCell>
-                      <CTableDataCell>{m.profiles?.email}</CTableDataCell>
-                      <CTableDataCell>
-                        {canManage && m.profiles?.id !== profile?.id ? (
-                          <CFormSelect
-                            size="sm"
-                            value={m.role}
-                            style={{ width: 130 }}
-                            onChange={(e) => handleRoleChange(m.profiles.id, e.target.value)}
-                          >
-                            <option value="viewer">Viewer</option>
-                            <option value="analyst">Analyst</option>
-                            <option value="admin">Admin</option>
-                            <option value="owner">Owner</option>
-                          </CFormSelect>
-                        ) : (
-                          <CBadge color={ROLE_COLORS[m.role]}>{m.role}</CBadge>
-                        )}
-                      </CTableDataCell>
-                      <CTableDataCell>{new Date(m.created_at).toLocaleDateString()}</CTableDataCell>
-                      {canManage && (
-                        <CTableDataCell>
-                          {m.profiles?.id !== profile?.id && (
-                            <CButton color="danger" variant="ghost" size="sm" onClick={() => handleRemove(m.profiles.id)}>
-                              <CIcon icon={cilTrash} />
-                            </CButton>
-                          )}
-                        </CTableDataCell>
+    <div>
+      <PageHeader
+        title={activeOrg.name}
+        subtitle="Team members"
+        actions={
+          canManage && (
+            <Button size="sm" onClick={() => setInviteModal(true)}>
+              <UserPlus className="h-3.5 w-3.5" /> Invite teammate
+            </Button>
+          )
+        }
+      />
+
+      <Card className="mb-4">
+        <CardContent className="p-0">
+          <AsyncBoundary
+            loading={loading}
+            error={error}
+            isEmpty={members.length === 0}
+            emptyMessage="No members yet."
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  {canManage && <TableHead />}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell>{m.profiles?.full_name || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {m.profiles?.email}
+                    </TableCell>
+                    <TableCell>
+                      {canManage && m.profiles?.id !== profile?.id ? (
+                        <Select
+                          value={m.role}
+                          onValueChange={(role) =>
+                            handleRoleChange(m.profiles.id, role)
+                          }
+                        >
+                          <SelectTrigger className="h-7 w-[120px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLES.map((r) => (
+                              <SelectItem
+                                key={r}
+                                value={r}
+                                className="capitalize"
+                              >
+                                {r}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <StatusBadge value={m.role} colorMap={ROLE_COLORS} />
                       )}
-                    </CTableRow>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(m.created_at).toLocaleDateString()}
+                    </TableCell>
+                    {canManage && (
+                      <TableCell>
+                        {m.profiles?.id !== profile?.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleRemove(m.profiles.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </AsyncBoundary>
+        </CardContent>
+      </Card>
+
+      {canManage && invites.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending invites</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invites.map((inv) => (
+                  <TableRow key={inv.id}>
+                    <TableCell>{inv.email}</TableCell>
+                    <TableCell>
+                      <StatusBadge value={inv.role} colorMap={ROLE_COLORS} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(inv.expires_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRevokeInvite(inv.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={inviteModal} onOpenChange={setInviteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite a teammate</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInvite} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="inviteEmail">Email</Label>
+              <Input
+                id="inviteEmail"
+                type="email"
+                placeholder="teammate@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INVITABLE_ROLES.map((r) => (
+                    <SelectItem key={r} value={r} className="capitalize">
+                      {r}
+                    </SelectItem>
                   ))}
-                </CTableBody>
-              </CTable>
-            )}
-          </CCardBody>
-        </CCard>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInviteModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Sending…" : "Send invite"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
-        {canManage && invites.length > 0 && (
-          <CCard>
-            <CCardHeader>Pending invites</CCardHeader>
-            <CCardBody>
-              <CTable hover responsive>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>Email</CTableHeaderCell>
-                    <CTableHeaderCell>Role</CTableHeaderCell>
-                    <CTableHeaderCell>Expires</CTableHeaderCell>
-                    <CTableHeaderCell></CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {invites.map((inv) => (
-                    <CTableRow key={inv.id}>
-                      <CTableDataCell>{inv.email}</CTableDataCell>
-                      <CTableDataCell>
-                        <CBadge color={ROLE_COLORS[inv.role]}>{inv.role}</CBadge>
-                      </CTableDataCell>
-                      <CTableDataCell>{new Date(inv.expires_at).toLocaleDateString()}</CTableDataCell>
-                      <CTableDataCell>
-                        <CButton color="danger" variant="ghost" size="sm" onClick={() => handleRevokeInvite(inv.id)}>
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            </CCardBody>
-          </CCard>
-        )}
-      </CCol>
-
-      <CModal visible={inviteModal} onClose={() => setInviteModal(false)}>
-        <CModalHeader>
-          <CModalTitle>Invite a teammate</CModalTitle>
-        </CModalHeader>
-        <CForm onSubmit={handleInvite}>
-          <CModalBody>
-            <CFormInput
-              className="mb-3"
-              type="email"
-              label="Email"
-              placeholder="teammate@company.com"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-            />
-            <CFormSelect label="Role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
-              <option value="viewer">Viewer — read-only</option>
-              <option value="analyst">Analyst — manage tokens, resolve alerts</option>
-              <option value="admin">Admin — manage team & everything else</option>
-            </CFormSelect>
-          </CModalBody>
-          <CModalFooter>
-            <CButton color="secondary" onClick={() => setInviteModal(false)}>
-              Cancel
-            </CButton>
-            <CButton color="warning" type="submit" disabled={submitting}>
-              {submitting ? <CSpinner size="sm" /> : 'Send invite'}
-            </CButton>
-          </CModalFooter>
-        </CForm>
-      </CModal>
-    </CRow>
-  )
-}
-
-export default Team
+export default Team;

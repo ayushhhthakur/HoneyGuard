@@ -1,77 +1,44 @@
-import React from 'react'
-import CIcon from '@coreui/icons-react'
 import {
-  cilBell,
-  cilPencil,
-  cilSpeedometer,
-  cilLocationPin,
-  cilFingerprint,
-  cilGlobeAlt,
-  cilPeople,
-  cilDevices,
-} from '@coreui/icons'
-import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
+  LayoutDashboard,
+  BellRing,
+  Fingerprint,
+  MapPin,
+  UploadCloud,
+  Tag,
+  List,
+  Users,
+} from "lucide-react";
 
-// A function (not a static array) so we can hide role-gated items — Team
-// management is visible to everyone (read-only for non-admins), but the
-// nav itself doesn't need role filtering beyond what the page enforces.
+/**
+ * Plain data — no CoreUI nav components. The Sidebar renders this directly,
+ * grouped by `section`.
+ */
 const getNav = () => [
   {
-    component: CNavItem,
-    name: 'Dashboard',
-    to: '/dashboard',
-    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    section: null,
+    items: [{ name: "Overview", to: "/dashboard", icon: LayoutDashboard }],
   },
   {
-    component: CNavTitle,
-    name: 'Honeytokens',
+    section: "Detection & Response",
+    items: [
+      { name: "Alerts", to: "/alerts", icon: BellRing },
+      { name: "Device Fingerprints", to: "/fingerprints", icon: Fingerprint },
+      { name: "Threat Map", to: "/utils/maps", icon: MapPin },
+    ],
   },
   {
-    component: CNavItem,
-    name: 'Tokens',
-    to: '/utils/Tokens',
-    icon: <CIcon icon={cilFingerprint} customClassName="nav-icon" />,
+    section: "Honeytokens",
+    items: [
+      { name: "Deploy Token", to: "/utils/Tokens", icon: UploadCloud },
+      { name: "Deployed Tokens", to: "/utils/track", icon: Fingerprint },
+      { name: "Categories", to: "/utils/category", icon: Tag },
+      { name: "Event Log", to: "/utils/logs", icon: List },
+    ],
   },
   {
-    component: CNavItem,
-    name: 'Track',
-    to: '/utils/track',
-    icon: <CIcon icon={cilGlobeAlt} customClassName="nav-icon" />,
+    section: "Organization",
+    items: [{ name: "Team", to: "/team", icon: Users }],
   },
-  {
-    component: CNavItem,
-    name: 'Alerts',
-    to: '/alerts',
-    icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Fingerprints',
-    to: '/fingerprints',
-    icon: <CIcon icon={cilDevices} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Maps',
-    to: '/utils/maps',
-    icon: <CIcon icon={cilLocationPin} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Category',
-    to: '/utils/category',
-    icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavTitle,
-    name: 'Organization',
-  },
-  {
-    component: CNavItem,
-    name: 'Team',
-    to: '/team',
-    icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
-  },
-]
+];
 
-export default getNav
+export default getNav;

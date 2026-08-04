@@ -1,49 +1,86 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import API_URL from '../../../config/api.js';
-import {
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CTable,
-  CTableRow,
-  CTableHeaderCell,
-  CTableBody,
-  CTableHead,
-  CTableDataCell,
-  CSpinner,
-  CAlert,
-  CButtonGroup,
-  CLink,
-  CBadge,
-  CButton,
-  CFormInput,
-  CFormSelect,
-  CRow,
-  CCol,
-  CTooltip,
-  CDropdown,
-  CDropdownToggle,
-  CDropdownMenu,
-  CDropdownItem,
-} from "@coreui/react";
-import CIcon from "@coreui/icons-react";
-import { 
-  cilCopy, 
-  cilTrash, 
-  cilPencil, 
-  cilSearch,
-  cilFilter,
-  cilSortAscending,
-  cilSortDescending,
-  cilOptions,
-  cilChartLine,
-} from "@coreui/icons";
+import React, { useState, useEffect, useMemo } from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
-import { format } from 'date-fns';
-import { toast } from 'react-toastify';
+import { format } from "date-fns";
+import { toast } from "react-toastify";
+import {
+  Copy,
+  Trash2,
+  Pencil,
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  LineChart,
+  RefreshCw,
+  Ban,
+  Clock,
+  Tag,
+  Download,
+  MoreVertical,
+} from "lucide-react";
+import API_URL from "@/config/api.js";
+import { tokensApi } from "@/api/tokens.api";
+import { AsyncBoundary } from "@/components/ui/AsyncStates";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+
+const TOKEN_STATUS_COLORS = {
+  active: "success",
+  rotated: "warning",
+  expired: "secondary",
+  revoked: "destructive",
+};
+
+const SortIcon = ({ field, sortField, sortDirection }) => {
+  if (sortField !== field) return <ArrowUpDown className="h-3 w-3" />;
+  return sortDirection === "asc" ? (
+    <ArrowUp className="h-3 w-3" />
+  ) : (
+    <ArrowDown className="h-3 w-3" />
+  );
+};
+
+SortIcon.propTypes = {
+  field: PropTypes.string.isRequired,
+  sortField: PropTypes.string.isRequired,
+  sortDirection: PropTypes.oneOf(["asc", "desc"]).isRequired,
+};
 
 const Track = () => {
+  const navigate = useNavigate();
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,381 +88,434 @@ const Track = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortField, setSortField] = useState("created_at");
   const [sortDirection, setSortDirection] = useState("desc");
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     fetchTokens();
-    // Check system preference for dark mode
-    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDarkMode(darkModeQuery.matches);
-    
-    const darkModeHandler = (e) => setIsDarkMode(e.matches);
-    darkModeQuery.addListener(darkModeHandler);
-    
-    return () => darkModeQuery.removeListener(darkModeHandler);
   }, []);
 
   const fetchTokens = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/tokens`);
-      if (response.data.success) {
-        setTokens(response.data.data);
-      } else {
-        setError(response.data.error || "Failed to fetch tokens");
-      }
+      setError(null);
+      const response = await tokensApi.list();
+      if (response.data.success) setTokens(response.data.data);
+      else setError(response.data.error || "Failed to fetch tokens");
     } catch (err) {
-      setError(err.message || "An error occurred while fetching tokens");
-      console.error(err);
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          "An error occurred while fetching tokens",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const navigate = useNavigate();
-
   const handleCopy = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Copied to clipboard!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy to clipboard");
     }
   };
 
   const handleSort = (field) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
       setSortDirection("asc");
     }
   };
 
-  const getSortedAndFilteredTokens = () => {
+  const sortedFilteredTokens = useMemo(() => {
     return tokens
-      .filter(token => {
-        const matchesSearch = 
+      .filter((token) => {
+        const matchesSearch =
           token.token.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          token.tokenName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === "all" || token.category === selectedCategory;
+          (token.token_name || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+        const matchesCategory =
+          selectedCategory === "all" || token.category === selectedCategory;
         return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {
         const direction = sortDirection === "asc" ? 1 : -1;
-        if (sortField === "created_at") {
+        if (sortField === "created_at")
           return direction * (new Date(a.created_at) - new Date(b.created_at));
-        }
         return direction * (a[sortField] < b[sortField] ? -1 : 1);
       });
-  };
-
-  const renderSortIcon = (field) => {
-    if (sortField !== field) return <CIcon icon={cilOptions} />;
-    return <CIcon icon={sortDirection === "asc" ? cilSortAscending : cilSortDescending} />;
-  };
+  }, [tokens, searchTerm, selectedCategory, sortField, sortDirection]);
 
   const handleDeleteToken = async (token) => {
-    if (!window.confirm("Are you sure you want to delete this token?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this token?")) return;
     try {
-      const response = await axios.delete(`${API_URL}/tokens/${token}`);
-      if (response.data.success) {
-        setTokens(prevTokens => prevTokens.filter(t => t.token !== token));
-      } else {
-        setError(response.data.error || "Failed to delete token");
-      }
+      const response = await tokensApi.remove(token);
+      if (response.data.success)
+        setTokens((prev) => prev.filter((t) => t.token !== token));
+      else toast.error(response.data.error || "Failed to delete token");
     } catch (err) {
-      setError(err.message || "An error occurred while deleting token");
-      console.error(err);
+      toast.error(
+        err.response?.data?.error || "An error occurred while deleting token",
+      );
+    }
+  };
+
+  const handleRotateToken = async (token) => {
+    const reason = window.prompt("Reason for rotation (optional):", "");
+    if (reason === null) return;
+    try {
+      const { data } = await tokensApi.rotate(token, reason);
+      toast.success(`Rotated — new token: ${data.data?.token || data.token}`);
+      fetchTokens();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to rotate token");
+    }
+  };
+
+  const handleExpireToken = async (token) => {
+    if (!window.confirm("Mark this token as expired?")) return;
+    try {
+      await tokensApi.expire(token);
+      toast.success("Token marked expired");
+      setTokens((prev) =>
+        prev.map((t) => (t.token === token ? { ...t, status: "expired" } : t)),
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to expire token");
+    }
+  };
+
+  const handleRevokeToken = async (token) => {
+    if (
+      !window.confirm("Revoke this token? This marks it compromised/inactive.")
+    )
+      return;
+    try {
+      await tokensApi.revoke(token);
+      toast.success("Token revoked");
+      setTokens((prev) =>
+        prev.map((t) => (t.token === token ? { ...t, status: "revoked" } : t)),
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to revoke token");
+    }
+  };
+
+  const handleEditTags = async (token, currentTags) => {
+    const input = window.prompt(
+      "Tags (comma separated):",
+      (currentTags || []).join(", "),
+    );
+    if (input === null) return;
+    const tags = input
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    try {
+      await tokensApi.updateTags(token, tags);
+      toast.success("Tags updated");
+      setTokens((prev) =>
+        prev.map((t) => (t.token === token ? { ...t, tags } : t)),
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to update tags");
+    }
+  };
+
+  const handleExportAll = async (fmt) => {
+    try {
+      const response = await tokensApi.exportTokens(fmt);
+      const blob = new Blob([response.data], {
+        type: fmt === "csv" ? "text/csv" : "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `honeytokens-export.${fmt}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to export tokens");
     }
   };
 
   return (
-    <div className={`track-container ${isDarkMode ? 'dark-mode' : ''}`}>
-      <CCard className="border-0 shadow-sm">
-        <CCardHeader className="bg-transparent border-bottom-0">
-          <CRow className="align-items-center">
-            <CCol>
-              <h4 className="mb-0">Active Tokens</h4>
-            </CCol>
-            <CCol xs="auto">
-              <CButton 
-                color="primary" 
-                onClick={() => navigate('/utils/tokens')}
-                className="d-flex align-items-center"
-              >
-                <CIcon icon={cilPencil} className="me-2" />
-                Create New Token
-              </CButton>
-            </CCol>
-          </CRow>
-        </CCardHeader>
+    <div>
+      <PageHeader
+        title="Deployed Tokens"
+        actions={
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-3.5 w-3.5" /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportAll("json")}>
+                  Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportAll("csv")}>
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button size="sm" onClick={() => navigate("/utils/tokens")}>
+              <Pencil className="h-3.5 w-3.5" /> Create New Token
+            </Button>
+          </>
+        }
+      />
 
-        <CCardBody>
-          <CRow className="mb-4 g-3">
-            <CCol md={6}>
-              <div className="search-container">
-                <CFormInput
-                  type="text"
-                  placeholder="Search tokens..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="search-input"
-                />
-                <CIcon icon={cilSearch} className="search-icon" />
-              </div>
-            </CCol>
-            <CCol md={3}>
-              <CFormSelect
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                <option value="image">Image Token</option>
-                <option value="aws">AWS Token</option>
-                <option value="financial">Financial Token</option>
-                <option value="healthcare">Healthcare Token</option>
-              </CFormSelect>
-            </CCol>
-            <CCol md={3}>
-              <CDropdown className="w-100">
-                <CDropdownToggle color="light" className="w-100">
-                  <CIcon icon={cilFilter} className="me-2" />
-                  More Filters
-                </CDropdownToggle>
-                <CDropdownMenu>
-                  <CDropdownItem>Active Tokens</CDropdownItem>
-                  <CDropdownItem>Inactive Tokens</CDropdownItem>
-                  <CDropdownItem>Custom Date Range</CDropdownItem>
-                </CDropdownMenu>
-              </CDropdown>
-            </CCol>
-          </CRow>
-
-          {loading && (
-            <div className="text-center py-5">
-              <CSpinner color="primary" />
+      <Card>
+        <CardContent className="p-4">
+          <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search tokens…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
-          )}
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="image">Image</SelectItem>
+                <SelectItem value="aws">AWS</SelectItem>
+                <SelectItem value="financial">Financial</SelectItem>
+                <SelectItem value="healthcare">Healthcare</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          {error && (
-            <CAlert color="danger" className="mb-4">
-              {error}
-            </CAlert>
-          )}
-
-          {!loading && !error && getSortedAndFilteredTokens().length === 0 && (
-            <CAlert color="info" className="text-center">
-              No tokens found matching your criteria
-            </CAlert>
-          )}
-
-          {!loading && !error && getSortedAndFilteredTokens().length > 0 && (
-            <div className="table-responsive">
-              <CTable hover align="middle" className="mb-0 token-table">
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell onClick={() => handleSort("token")} className="sortable-header">
-                      Token {renderSortIcon("token")}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell onClick={() => handleSort("category")} className="sortable-header">
-                      Category {renderSortIcon("category")}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell onClick={() => handleSort("tokenName")} className="sortable-header">
-                      Token Name {renderSortIcon("tokenName")}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell onClick={() => handleSort("is_active")} className="sortable-header">
-                      Status {renderSortIcon("is_active")}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell>Analytics</CTableHeaderCell>
-                    <CTableHeaderCell>Actions</CTableHeaderCell>
-                    <CTableHeaderCell onClick={() => handleSort("created_at")} className="sortable-header">
-                      Created At {renderSortIcon("created_at")}
-                    </CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {getSortedAndFilteredTokens().map((token) => (
-                    <CTableRow key={token.token} className="token-row">
-                      <CTableDataCell>
-                        <CTooltip content="Click to copy token">
-                          <div
-                            onClick={() => handleCopy(token.token)}
-                            className="token-cell"
-                          >
-                            {token.token.substring(0, 15)}...
-                            <CIcon icon={cilCopy} className="ms-2" />
-                          </div>
-                        </CTooltip>
-                      </CTableDataCell>
-
-                      <CTableDataCell>
-                        {token.category === 'image' ? (
-                          <CTooltip content="View image">
-                            <CLink 
-                              href={`${API_URL.replace(/\/$/, '')}/image/${token.token}`} 
-                              target="_blank"
-                              className="category-link"
+          <AsyncBoundary
+            loading={loading}
+            error={error}
+            isEmpty={sortedFilteredTokens.length === 0}
+            emptyMessage="No tokens found matching your criteria."
+          >
+            <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort("token")}
+                    >
+                      <span className="flex items-center gap-1">
+                        Token{" "}
+                        <SortIcon
+                          field="token"
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                        />
+                      </span>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort("category")}
+                    >
+                      <span className="flex items-center gap-1">
+                        Category{" "}
+                        <SortIcon
+                          field="category"
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                        />
+                      </span>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort("token_name")}
+                    >
+                      <span className="flex items-center gap-1">
+                        Name{" "}
+                        <SortIcon
+                          field="token_name"
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                        />
+                      </span>
+                    </TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Tags</TableHead>
+                    <TableHead>Analytics</TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort("created_at")}
+                    >
+                      <span className="flex items-center gap-1">
+                        Created{" "}
+                        <SortIcon
+                          field="created_at"
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                        />
+                      </span>
+                    </TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedFilteredTokens.map((token) => (
+                    <TableRow key={token.token}>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(token.token)}
+                              className="flex items-center gap-1.5 text-mono text-xs text-muted-foreground hover:text-foreground"
                             >
-                              View Image
-                            </CLink>
-                          </CTooltip>
+                              {token.token.substring(0, 15)}…
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Click to copy token</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+
+                      <TableCell>
+                        {token.category === "image" ? (
+                          <a
+                            href={`${API_URL.replace(/\/$/, "")}/image/${token.token}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-primary hover:underline"
+                          >
+                            View Image
+                          </a>
                         ) : (
-                          <CBadge 
-                            color="info" 
-                            className="category-badge"
-                            shape="rounded-pill"
-                          >
-                            {token.category.toUpperCase()}
-                          </CBadge>
+                          <Badge variant="default" className="uppercase">
+                            {token.category}
+                          </Badge>
                         )}
-                      </CTableDataCell>
+                      </TableCell>
 
-                      <CTableDataCell>{token.tokenName}</CTableDataCell>
+                      <TableCell>{token.token_name}</TableCell>
 
-                      <CTableDataCell>
-                        <CBadge 
-                          color={token.is_active ? "success" : "danger"}
-                          className="status-badge"
-                          shape="rounded-pill"
-                        >
-                          {token.is_active ? "Active" : "Inactive"}
-                        </CBadge>
-                      </CTableDataCell>
+                      <TableCell>
+                        <StatusBadge
+                          value={
+                            token.status ||
+                            (token.is_active ? "active" : "expired")
+                          }
+                          colorMap={TOKEN_STATUS_COLORS}
+                        />
+                      </TableCell>
 
-                      <CTableDataCell>
-                        <CButton 
-                          color="light" 
-                          variant="ghost"
-                          onClick={() => navigate(`/utils/track/${token.token}`)}
-                          className="analytics-button"
-                        >
-                          <CIcon icon={cilChartLine} className="me-2" />
-                          View Logs
-                        </CButton>
-                      </CTableDataCell>
-
-                      <CTableDataCell>
-                        <CButtonGroup>
-                          <CTooltip content="Delete token">
-                            <CButton 
-                              color="danger" 
-                              variant="ghost"
-                              onClick={() => handleDeleteToken(token.token)}
-                              className="action-button"
+                      <TableCell>
+                        <div className="flex max-w-[160px] flex-wrap gap-1">
+                          {(token.tags || []).slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="text-[10px]"
                             >
-                              <CIcon icon={cilTrash} />
-                            </CButton>
-                          </CTooltip>
-                        </CButtonGroup>
-                      </CTableDataCell>
+                              {tag}
+                            </Badge>
+                          ))}
+                          {(!token.tags || token.tags.length === 0) && (
+                            <span className="text-xs text-muted-foreground">
+                              —
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
 
-                      <CTableDataCell>
-                        {format(new Date(token.created_at), 'MMM dd, yyyy HH:mm')}
-                      </CTableDataCell>
-                    </CTableRow>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/utils/track/${token.token}`)
+                          }
+                        >
+                          <LineChart className="h-3.5 w-3.5" /> Logs
+                        </Button>
+                      </TableCell>
+
+                      <TableCell className="text-muted-foreground">
+                        {format(
+                          new Date(token.created_at),
+                          "MMM dd, yyyy HH:mm",
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {token.status !== "expired" &&
+                              token.status !== "revoked" && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleRotateToken(token.token)
+                                    }
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" /> Rotate
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleExpireToken(token.token)
+                                    }
+                                  >
+                                    <Clock className="h-3.5 w-3.5" /> Mark
+                                    expired
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleRevokeToken(token.token)
+                                    }
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Ban className="h-3.5 w-3.5" /> Revoke
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleEditTags(token.token, token.tags)
+                              }
+                            >
+                              <Tag className="h-3.5 w-3.5" /> Edit tags
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteToken(token.token)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </CTableBody>
-              </CTable>
-            </div>
-          )}
-        </CCardBody>
-      </CCard>
-
-      <style>
-        {`
-          .track-container {
-            transition: all 0.3s ease;
-          }
-          
-          .dark-mode {
-            background-color: var(--cui-dark);
-            color: var(--cui-light);
-          }
-          
-          .dark-mode .card {
-            background-color: var(--cui-gray-900);
-            border-color: var(--cui-gray-800);
-          }
-          
-          .dark-mode .table {
-            color: var(--cui-light);
-          }
-          
-          .search-container {
-            position: relative;
-          }
-          
-          .search-icon {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--cui-gray-500);
-          }
-          
-          .token-row {
-            transition: all 0.2s ease;
-          }
-          
-          .token-row:hover {
-            background-color: var(--cui-gray-100);
-            transform: translateX(5px);
-          }
-          
-          .dark-mode .token-row:hover {
-            background-color: var(--cui-gray-800);
-          }
-          
-          .token-cell {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-          }
-          
-          .category-badge {
-            font-size: 0.8rem;
-            padding: 0.4rem 0.8rem;
-          }
-          
-          .status-badge {
-            font-size: 0.8rem;
-            padding: 0.4rem 0.8rem;
-          }
-          
-          .analytics-button {
-            transition: all 0.2s ease;
-          }
-          
-          .analytics-button:hover {
-            transform: translateY(-2px);
-          }
-          
-          .action-button {
-            transition: all 0.2s ease;
-          }
-          
-          .action-button:hover {
-            transform: scale(1.1);
-          }
-          
-          .sortable-header {
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.2s ease;
-          }
-          
-          .sortable-header:hover {
-            background-color: var(--cui-gray-100);
-          }
-          
-          .dark-mode .sortable-header:hover {
-            background-color: var(--cui-gray-800);
-          }
-        `}
-      </style>
+                </TableBody>
+              </Table>
+            </TooltipProvider>
+          </AsyncBoundary>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,41 +1,18 @@
-import React from 'react'
-import {
-  CButton,
-  CCol,
-  CContainer,
-  CFormInput,
-  CInputGroup,
-  CInputGroupText,
-  CRow,
-} from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import { cilMagnifyingGlass } from '@coreui/icons'
+import React from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
-const Page404 = () => {
-  return (
-    <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol md={6}>
-            <div className="clearfix">
-              <h1 className="float-start display-3 me-4">404</h1>
-              <h4 className="pt-3">Oops! You{"'"}re lost.</h4>
-              <p className="text-body-secondary float-start">
-                The page you are looking for was not found.
-              </p>
-            </div>
-            <CInputGroup className="input-prepend">
-              <CInputGroupText>
-                <CIcon icon={cilMagnifyingGlass} />
-              </CInputGroupText>
-              <CFormInput type="text" placeholder="What are you looking for?" />
-              <CButton color="info">Search</CButton>
-            </CInputGroup>
-          </CCol>
-        </CRow>
-      </CContainer>
-    </div>
-  )
-}
+const Page404 = () => (
+  <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center">
+    <span className="text-4xl font-bold text-foreground">404</span>
+    <h1 className="text-base font-semibold">Page not found</h1>
+    <p className="max-w-sm text-xs text-muted-foreground">
+      The page you&apos;re looking for doesn&apos;t exist or has moved.
+    </p>
+    <Button asChild size="sm" className="mt-2">
+      <Link to="/dashboard">Back to dashboard</Link>
+    </Button>
+  </div>
+);
 
-export default Page404
+export default Page404;

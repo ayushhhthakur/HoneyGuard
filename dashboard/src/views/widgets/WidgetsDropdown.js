@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import API_URL from '../../config/api.js'
-import axios from 'axios'
+import { tokensApi } from '../../api/tokens.api'
+import { statsApi } from '../../api/stats.api'
 
 import {
   CRow,
@@ -22,29 +22,17 @@ const WidgetsDropdown = (props) => {
   // Fetch all data
   const fetchAllData = useCallback(async () => {
     try {
-      // Fetch token count
-      const tokenCountResponse = await axios.get(`${API_URL}/tokens/count`)
-      if (tokenCountResponse.data.success) {
-        setTokenCount(tokenCountResponse.data.data)
-      }
+      const [tokenCountResponse, logsCountResponse, tokenStatsResponse, activityStatsResponse] = await Promise.all([
+        tokensApi.count(),
+        statsApi.logsCount(),
+        statsApi.tokenSeries(),
+        statsApi.activitySeries(),
+      ])
 
-      // Fetch logs count
-      const logsCountResponse = await axios.get(`${API_URL}/stats/logs-count`)
-      if (logsCountResponse.data.success) {
-        setLogsCount(logsCountResponse.data.data)
-      }
-
-      // Fetch token stats
-      const tokenStatsResponse = await axios.get(`${API_URL}/stats/tokens`)
-      if (tokenStatsResponse.data.success) {
-        setTokenStats(tokenStatsResponse.data.data)
-      }
-
-      // Fetch activity stats
-      const activityStatsResponse = await axios.get(`${API_URL}/stats/activity`)
-      if (activityStatsResponse.data.success) {
-        setActivityStats(activityStatsResponse.data.data)
-      }
+      if (tokenCountResponse.data.success) setTokenCount(tokenCountResponse.data.data)
+      if (logsCountResponse.data.success) setLogsCount(logsCountResponse.data.data)
+      if (tokenStatsResponse.data.success) setTokenStats(tokenStatsResponse.data.data)
+      if (activityStatsResponse.data.success) setActivityStats(activityStatsResponse.data.data)
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
     }
